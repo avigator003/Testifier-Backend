@@ -206,8 +206,7 @@ exports.list = (req, res) => {
             User.findById(req.params.id).then(data =>
                 
                 {
-        
-                    res.status(200).json({ 'success': true, 'message': 'user fetched', data });
+            res.status(200).json({ 'success': true, 'message': 'user fetched', data });
                 }).catch(err =>{
         
         
