@@ -1,11 +1,11 @@
-const Tests = require('../../../Models/tests')
+const Tests = require('../../../Models/test')
 
 
 // Create New List
 exports.saveTest = (req, res) => {
 
     let dbbody=req.body
-    Tests.insertOne(dbbody,(err,data)=>{
+    Tests.create(dbbody,(err,data)=>{
         if(err)
          res.status(500).send("Not Saved")
         else

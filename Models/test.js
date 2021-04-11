@@ -6,12 +6,13 @@ const schemaOptions = {
   };
 
 const Tests = new Schema({
-    InstituteName:String,
-    TestName:String,
-    TestCategory:String,
-    CategoryType:String,
-    NumberOfQuestions:Number,
-    Answers:[{number:Number,option:String,category:String}]
+    instituteName:String,
+    testName:String,
+    testCategory:String,
+    categoryType:String,
+    numberOfQuestions:Number,
+    questionPaperLink:String,
+    answers:[{number:Number,options:String,category:String}]
 },schemaOptions)
 
 module.exports = mongoose.model('Tests', Tests)

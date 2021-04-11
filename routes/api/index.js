@@ -3,6 +3,7 @@ const authMiddleware = require('../../middlewares/auth')
 const auth = require('./auth')
 const user = require('./user')
 const admin = require('./admin')
+const tests = require('./tests')
 /*
 const features = require("./features")
 const blogs = require("./blogs")
@@ -41,6 +42,8 @@ router.use("/calendar", calendar)
 router.use("/activity", activity)
 */
 router.use('/admin', admin)
+
+router.use('/tests', tests)
 /*
 router.use('/document', document)
 router.use('/account', account)
