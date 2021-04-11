@@ -12,6 +12,7 @@ const Tests = new Schema({
     categoryType:String,
     numberOfQuestions:Number,
     questionPaperLink:String,
+    answerPaperLink:String,
     answers:[{number:Number,options:String,category:String}]
 },schemaOptions)
 
