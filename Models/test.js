@@ -13,6 +13,7 @@ const Tests = new Schema({
     numberOfQuestions:Number,
     questionPaperLink:String,
     answerPaperLink:String,
+    paid: {type: Boolean, default: false},
     answers:[{number:Number,options:String,category:String}]
 },schemaOptions)
 

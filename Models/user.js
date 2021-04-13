@@ -16,10 +16,11 @@ const User = new Schema({
     additionalSubjects:String,
     blocked: {type: Boolean, default: false},
     verified: {type: Boolean, default: false},
-    account:Object,
-    target:Object,
-    registeredOn:Object,
-    subscriptionEndOn:Object
+    courseSubscribed: {type: Boolean, default: false},
+    testSubscribed: {type: Boolean, default: false},
+    testSubscribedOn:Date,
+    courseSubscribedOn:Date,
+    numberOfShares:[{number:Number,testId:String}]
 }, schemaOptions)
 
 
