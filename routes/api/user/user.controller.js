@@ -100,7 +100,7 @@ exports.list = (req, res) => {
           var emailText = `<p>Hi ${user.firstName}</p><p>Please <a href="${url}">click here</a> to reset your password and continue using our portal</p><p>Regards</p>Precedent Team`
 
             var mailOptions = {
-            from: 'Precedent Online <admin@precedentonline.com>',
+              from: 'informatics003@gmail.com',
               to: userEmail,
               subject: 'Forget Password Link',
               html: emailText

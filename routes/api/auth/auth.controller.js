@@ -4,21 +4,14 @@ const nodemailer = require("nodemailer")
 
 var request = require('request');
 
-var sesTransport = require('nodemailer-ses-transport');
+var transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: 'informatics003@gmail.com',
+      pass: 'Eurotrip@123'
+    }
 
-var SESCREDENTIALS = {
-    accessKeyId: "accesskey",
-    secretAccessKey: "secretkey"
-};
-
-var transporter = nodemailer.createTransport(sesTransport({
-
-
-    accessKeyId: process.env.accessKeyId,
-    secretAccessKey: process.env.secretAccessKey,
-
-
-}));
+});
 
 /*
     POST /api/auth/register
@@ -67,16 +60,18 @@ exports.register = (req, res) => {
         console.log({ user })
 
 
-        //var url = "https://precedentonline.com" +'/verified/?token='+user._id;
+       
+        var url = process.env.clientUrl + '/verified/?token=' + user._id;
+
 
         var userEmail = user.emailAddress;
-        var emailText = `<p>Hi ${user.firstName}</p><p>Please <a href="${"http://localhost:8000"}">click here</a> to verify your account and start using our portal.</p><p>Regards</p>Precedent Team`
+        var emailText = `<p>Hi ${user.name}</p><p>Please <a href="${url}">click here</a> to verify your account and start using our website.</p><p>Regards</p>Testifier`
 
 
 
         //   emailText += '<p><a href="'+url+'">click here</a>';
         var mailOptions = {
-            from: 'Testifier  <admin@testifier.com>',
+            from: 'informatics003@gmail.com',
             to: userEmail,
             subject: 'Testifier | Verify Your Account',
             html: emailText
