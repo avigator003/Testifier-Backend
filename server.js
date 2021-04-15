@@ -57,7 +57,11 @@ app.listen(port, () => {
 /* =======================
     CONNECT TO MONGODB SERVER
 ==========================*/
-mongoose.connect(config.mongodbUri,{useMongoClient: true})
+mongoose.connect(config.mongodbUri,
+    {useNewUrlParser: true, 
+     useUnifiedTopology: true ,
+     useCreateIndex:true })
+     
 mongoose.Promise = global.Promise
 const db = mongoose.connection
 db.on('error', console.error)
