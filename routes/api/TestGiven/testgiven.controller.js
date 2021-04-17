@@ -4,9 +4,14 @@ const TestGiven = require('../../../Models/giventest')
 // Create New Test
 exports.saveTest = (req, res) => {
    let dbbody=req.body
+   console.log("body",dbbody)
+ 
    TestGiven.create(dbbody,(err,data)=>{
         if(err)
+        {
+ 
          res.status(500).send("Not Saved")
+        }
         else
          res.status(200).send(data)
     })  
