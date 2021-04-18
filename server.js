@@ -11,7 +11,7 @@ var cors = require('cors');
 LOAD THE CONFIG
 ==========================*/
 const config = require('./config')
-const port = process.env.PORT || 8000
+const port = process.env.PORT || 5000
 
 /* =======================
 EXPRESS CONFIGURATION
