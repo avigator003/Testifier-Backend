@@ -23,7 +23,6 @@ exports.createList = (req, res) => {
 
 //Delete a list
 exports.deleteList = (req, res) => {
-// console.log(req.params.id)
     User.findByIdAndRemove(req.params.id).
         then(data => {
             res.status(200).json({status: true, message:"User list Removed", data})

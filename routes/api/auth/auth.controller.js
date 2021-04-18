@@ -7,7 +7,7 @@ var request = require('request');
 var transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
-      user: 'informatics003@gmail.com',
+      user: 'rapidiasacademy@gmail.com',
       pass: 'Eurotrip@123'
     }
 
@@ -65,15 +65,15 @@ exports.register = (req, res) => {
 
 
         var userEmail = user.emailAddress;
-        var emailText = `<p>Hi ${user.name}</p><p>Please <a href="${url}">click here</a> to verify your account and start using our website.</p><p>Regards</p>Testifier`
+        var emailText = `<p>Hi ${user.name}</p><p>Please <a href="${url}">click here</a> to verify your account and start using our website.</p><p>Regards</p>Rapid IAS`
 
 
 
         //   emailText += '<p><a href="'+url+'">click here</a>';
         var mailOptions = {
-            from: 'informatics003@gmail.com',
+            from: 'rapidiasacademy@gmail.com',
             to: userEmail,
-            subject: 'Testifier | Verify Your Account',
+            subject: 'Rapid IAS | Verify Your Account',
             html: emailText
         };
 
@@ -160,7 +160,7 @@ exports.login = (req, res) => {
                         secret,
                         {
                             expiresIn: '7d',
-                            issuer: 'testifier',
+                            issuer: 'rapidIAS',
                             subject: 'userInfo'
                         }, (err, token) => {
                             if (err) reject(err)
