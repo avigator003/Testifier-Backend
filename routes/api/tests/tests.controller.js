@@ -18,7 +18,7 @@ exports.deleteList = (req, res) => {
 // console.log(req.params.id)
     Tests.findByIdAndRemove(req.params.id).
         then(data => {
-            res.status(200).json({status: true, message:"Tests list Removed", data})
+            res.status(200).json({status: true, message:"Test Removed", data})
 
         }).catch(error => {
         res.status(200).json({status: false, message:error})
