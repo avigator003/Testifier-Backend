@@ -42,6 +42,19 @@ exports.showAll = (req, res) => {
         })
 }
 
+exports.showUserTest = (req, res) => {
+
+    TestGiven.find({userId:req.params.id}).populate('testId').
+        then(data => {
+            res.status(200).json({status: true, message:"Tests list fetched", data})
+      }).catch(error => {
+        res.status(200).json({status: false, message:error})
+
+        })
+}
+
+
+
 //Edit Test
 exports.editTest = (req, res) => {
 

@@ -6,8 +6,9 @@ const schemaOptions = {
   };
 
 const TestGiven = new Schema({
-    userId:String,
-    testId:String,
+    userId:{ type: Schema.Types.ObjectId, ref: "User" },
+    testId:{ type: Schema.Types.ObjectId, ref: "Tests" },
+    overall:{totalQuestion:Number,totalAttempted:Number,totalMarksPaper:Number,totalMarks:Number,accuracy:Number},
     overallAnalysis:{Correct:Number,Incorrect:Number,Skipped:Number},
     sectionalAnalysis:[{percentageCorrect:Number,
                       section:[{value:String,percentage:String,questionNumber:Number,category:String}]
