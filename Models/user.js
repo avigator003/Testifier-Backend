@@ -15,7 +15,7 @@ const User = new Schema({
     upscAttempts:Number,
     additionalSubjects:String,
     blocked: {type: Boolean, default: false},
-    verified: {type: Boolean, default: false},
+    verified: {type: Boolean, default: true},
     courseSubscribed: {type: Boolean, default: false},
     testSubscribed: {type: Boolean, default: false},
     testSubscribedOn:Date,

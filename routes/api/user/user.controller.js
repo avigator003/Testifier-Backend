@@ -216,3 +216,25 @@ exports.list = (req, res) => {
                 })
                  
               }
+
+
+              
+              exports.sendmail = (req, res) => {
+              
+                var mailOptions = {
+                  from: req.body.email,
+                  to: "rapidIASAcademy@gmail.com",
+                  subject: 'Test Feedback',
+                  html: req.body.text
+                };
+                
+                transporter.sendMail(mailOptions, function(error, info){
+                  if (error) {
+                    console.log(error);
+                    res.json({ 'success': false, 'message': error });
+                  }else {
+                   res.json({ 'success': true, 'message': 'email sent successfully' });
+                  }
+                  });
+             
+                  }
