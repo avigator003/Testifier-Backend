@@ -12,7 +12,7 @@ const User = new Schema({
     password: String,
     admin: { type: Boolean, default: false },
     phoneNumber:String,
-    upscAttempts:String,
+    upscAttempts:Number,
     additionalSubjects:String,
     blocked: {type: Boolean, default: false},
     verified: {type: Boolean, default: false},
