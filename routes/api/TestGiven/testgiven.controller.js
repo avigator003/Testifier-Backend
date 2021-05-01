@@ -70,7 +70,8 @@ exports.editTest = (req, res) => {
 //View Test By Id
 exports.viewTest = (req, res) => {
     
-    TestGiven.findById(req.params.id).then(data =>
+    TestGiven.findById(req.params.id).populate('testId')
+    .then(data =>
         {
     res.status(200).json({ 'success': true, 'message': 'Test fetched', data });
         }).catch(err =>{
