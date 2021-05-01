@@ -16,7 +16,8 @@ const TestGiven = new Schema({
     confidenceLevelAnalysis:[{attempted:Number,correct:Number,wrong:Number,
       accuracy:Number,marks:Number,percentage:String,avatar:[{value:String,questionNumber:Number}]}],
     userInfoAnalysis:[{correctAnswer:String,userAnswer:String}],
-    percentageArray:[]
+    percentageArray:[],
+    feedback:String
 },schemaOptions)
 
 module.exports = mongoose.model('TestGiven', TestGiven)

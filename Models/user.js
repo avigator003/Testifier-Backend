@@ -21,7 +21,8 @@ const User = new Schema({
     testSubscribedOn:Date,
     courseSubscribedOn:Date,
     numberOfShares:[{number:Number,testId:String}],
-    testsGiven:[{testId:String,Right:Number,Wrong:Number,Percentage:Number,Confidence:Number}]
+    testsGiven:[{testId:String,Right:Number,Wrong:Number,Percentage:Number,Confidence:Number}],
+    allowedTests:{ type: Number, default: 1 }
 }, schemaOptions)
 
 

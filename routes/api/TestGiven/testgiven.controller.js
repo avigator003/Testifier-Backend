@@ -4,7 +4,6 @@ const TestGiven = require('../../../Models/giventest')
 // Create New Test
 exports.saveTest = (req, res) => {
    let dbbody=req.body
-   console.log("body",dbbody)
  
    TestGiven.create(dbbody,(err,data)=>{
         if(err)
@@ -33,7 +32,7 @@ TestGiven.findByIdAndRemove(req.params.id).
 //Show all 
 exports.showAll = (req, res) => {
 
-    TestGiven.find({}).
+    TestGiven.find({}).populate('testId').populate('userId').
         then(data => {
             res.status(200).json({status: true, message:"Tests list fetched", data})
       }).catch(error => {
