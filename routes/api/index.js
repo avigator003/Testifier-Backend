@@ -5,6 +5,7 @@ const user = require('./user')
 const admin = require('./admin')
 const tests = require('./tests')
 const testGiven = require('./TestGiven')
+const testApproval = require('./ApprovalTests')
 
 router.use('/auth', auth)
 
@@ -19,6 +20,7 @@ router.use('/admin', admin)
 router.use('/tests', tests)
 
 router.use('/testgiven', testGiven)
+router.use('/testapproval', testApproval)
 /*
 router.use('/document', document)
 router.use('/account', account)

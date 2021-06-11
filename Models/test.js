@@ -14,7 +14,10 @@ const Tests = new Schema({
     questionPaperLink:String,
     answerPaperLink:String,
     paid: {type: Boolean, default: false},
-    answers:[{number:Number,options:String,category:String}]
+    answers:[{number:Number,options:String,category:String}],
+    approved: {type: Boolean, default: true},
+    approvalUser:{ type: Schema.Types.ObjectId, ref: "User" },
+    
 },schemaOptions)
 
 module.exports = mongoose.model('Tests', Tests)
