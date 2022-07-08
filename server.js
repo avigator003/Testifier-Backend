@@ -11,7 +11,7 @@ var cors = require('cors');
 LOAD THE CONFIG
 ==========================*/
 const config = require('./config')
-const port = process.env.PORT || 5000
+const port = process.env.PORT || 4000
 
 /* =======================
 EXPRESS CONFIGURATION
@@ -32,6 +32,14 @@ app.use(cors(corsOptions));
 // parse JSON and url-encoded query
 app.use(bodyParser.urlencoded({extended: false}))
 app.use(bodyParser.json())
+
+app.use(function(req, res, next) {
+    res.header("Access-Control-Allow-Origin", '*');
+    res.header("Access-Control-Allow-Credentials", true);
+    res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
+    res.header("Access-Control-Allow-Headers", 'Origin,X-Requested-With,Content-Type,Accept,content-type,application/json');
+    next();
+});
 
 // print the request log on console
 app.use(morgan('dev'))

@@ -10,7 +10,7 @@ const User = new Schema({
     userName: String,
     emailAddress:{type:String, unique:true},
     password: String,
-    admin: { type: Boolean, default: false },
+    admin: { type: Boolean, default: true },
     phoneNumber:String,
     upscAttempts:Number,
     additionalSubjects:String,
