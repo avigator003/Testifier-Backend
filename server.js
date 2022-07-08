@@ -22,7 +22,7 @@ const app = express()
 //   }));
 
 const corsOptions = {
-    origin: true,
+    origin: "http://localhost:3000",
     optionsSuccessStatus: 204,
     credentials: true,
   };
@@ -33,13 +33,22 @@ app.use(cors(corsOptions));
 app.use(bodyParser.urlencoded({extended: false}))
 app.use(bodyParser.json())
 
-app.use(function(req, res, next) {
-    res.header("Access-Control-Allow-Origin", '*');
-    res.header("Access-Control-Allow-Credentials", true);
-    res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
-    res.header("Access-Control-Allow-Headers", 'Origin,X-Requested-With,Content-Type,Accept,content-type,application/json');
-    next();
-});
+
+app.use((req, res, next) => {
+    res.header("Access-Control-Allow-Origin", "*")
+    res.header(
+      "Access-Control-Allow-Headers",
+      "Origin, X-Requested, Content-Type, Accept Authorization"
+    )
+    if (req.method === "OPTIONS") {
+      res.header(
+        "Access-Control-Allow-Methods",
+        "POST, PUT, PATCH, GET, DELETE"
+      )
+      return res.status(200).json({})
+    }
+    next()
+  })
 
 // print the request log on console
 app.use(morgan('dev'))
