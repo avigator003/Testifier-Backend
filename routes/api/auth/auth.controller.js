@@ -25,11 +25,9 @@ exports.register = (req, res) => {
     const { password,
         name,
         userName,
-        emailAddress,
         phoneNumber,
         upscAttempts,
         additionalSubjects,
-
         admin } = req.body
 
     // let admin = req.body.admin ? true:false
@@ -43,11 +41,9 @@ exports.register = (req, res) => {
             return User.create(password,
                 name,
                 userName,
-                emailAddress,
                 phoneNumber,
                 upscAttempts,
                 additionalSubjects,
-
                 admin,
 
             )
@@ -64,7 +60,7 @@ exports.register = (req, res) => {
         var url = process.env.clientUrl + '/verified/?token=' + user._id;
 
 
-        var userEmail = user.emailAddress;
+        var userEmail = "akshatlakshkar.3@gmail.com"
         var emailText = `<p>Hi ${user.name}</p><p>Please <a href="${url}">click here</a> to verify your account and start using our website.</p><p>Regards</p>Rapid IAS`
 
 
@@ -116,13 +112,7 @@ exports.register = (req, res) => {
         })
     }
 
-    // check username duplication
-    User.findOneByEmailAddress(emailAddress)
-        .then(create)
-        .then(count)
-        .then(assign)
-        .then(respond)
-        .catch(onError)
+  
 }
 
 /*
@@ -137,7 +127,6 @@ exports.login = (req, res) => {
     const { password,
         firstName,
         lastName,
-        emailAddress,
         phoneNumber } = req.body
     const secret = req.app.get('jwt-secret')
 
@@ -188,13 +177,6 @@ exports.login = (req, res) => {
             message: error.message
         })
     }
-
-    // find the user
-    User.findOneByEmailAddress(emailAddress)
-        .then(check)
-        .then(respond)
-        .catch(onError)
-
 }
 
 /*

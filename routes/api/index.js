@@ -3,33 +3,23 @@ const authMiddleware = require('../../middlewares/auth')
 const auth = require('./auth')
 const user = require('./user')
 const admin = require('./admin')
-const tests = require('./tests')
-const testGiven = require('./TestGiven')
-const testApproval = require('./ApprovalTests')
+const labour = require('./labour')
+const stock = require('./stock')
+const rawMaterial = require('./raw-material')
+const product = require('./product')
+const category = require('./category')
+const order = require('./order')
+
 
 router.use('/auth', auth)
-
 router.use('/user', user)
-/*
-router.use('/tasks', tasks)
-router.use("/calendar", calendar)
-router.use("/activity", activity)
-*/
 router.use('/admin', admin)
+router.use('/labour', labour)
+router.use('/stock', stock)
+router.use('/product', product)
+router.use('/category', category)
+router.use('/order', order)
+router.use('/raw-material', rawMaterial)
 
-router.use('/tests', tests)
-
-router.use('/testgiven', testGiven)
-router.use('/testapproval', testApproval)
-/*
-router.use('/document', document)
-router.use('/account', account)
-router.use('/ticket', support)
-router.use('/communication', Communication)
-router.use('/notes', Notes)
-router.use('/subscription', Subscription)
-router.use("/footer", Footer)
-router.use('/aboutus/', aboutus)
-*/
 
 module.exports = router
