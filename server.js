@@ -10,7 +10,7 @@ var cors = require('cors');
 /* =======================
 LOAD THE CONFIG
 ==========================*/
-const config = require('../config')
+const config = require('./config')
 const port = process.env.PORT || 5001
 
 /* =======================
@@ -45,7 +45,7 @@ app.get('/', (req, res) => {
 })
 
 // configure api router
-app.use('/api', require('../routes/api'))
+app.use('/api', require('./routes/api'))
 app.use('/uploads', express.static('uploads'));
 
 // open the server
