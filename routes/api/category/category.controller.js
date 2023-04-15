@@ -4,7 +4,7 @@ const multer = require('multer');
 // Set up multer storage engine
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-      cb(null, './uploads/categories');
+      cb(null, 'public/uploads/categories');
     },
     filename: (req, file, cb) => {
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
@@ -48,7 +48,7 @@ exports.createCategory = (req, res) => {
       let filePath = null; 
       if (req.file) {
        const fileName = req.file.filename;
-       const filePath = "/uploads/categories/"+fileName
+       const filePath = "public/uploads/categories/"+fileName
        userData.user_profile = filePath;
      }
       Category.create({ ...categoryData, category_photo: filePath})
@@ -75,7 +75,7 @@ exports.updateCategory = (req, res) => {
     // Check if a new file was uploaded
     if (req.file) {
       const fileName = req.file.filename;
-      const filePath = "/uploads/categories/" + fileName;
+      const filePath = "public/uploads/categories/" + fileName;
       categoryData.category_photo = filePath;
     }
 

@@ -7,7 +7,7 @@ const multer = require('multer');
 // Set up multer storage engine
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, './uploads/users');
+    cb(null, 'public/uploads/users');
   },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
@@ -196,7 +196,7 @@ exports.createUser = (req, res) => {
      let filePath = null; 
      if (req.file) {
       const fileName = req.file.filename;
-      const filePath = "/uploads/users/" + fileName;
+      const filePath = "public/uploads/users/" + fileName;
       userData.user_profile = filePath;
     }
 
@@ -224,7 +224,7 @@ exports.updateUser = (req, res) => {
     // Check if a new file was uploaded
     if (req.file) {
       const fileName = req.file.filename;
-      const filePath = "/uploads/users/" + fileName;
+      const filePath = "public/uploads/users/" + fileName;
       userData.user_profile = filePath;
     }
 

@@ -4,7 +4,7 @@ const multer = require('multer');
 // Set up multer storage engine
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-      cb(null, './uploads/products');
+      cb(null, 'public/uploads/products');
     },
     filename: (req, file, cb) => {
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
@@ -28,7 +28,7 @@ exports.createProduct = (req, res) => {
    
       if (req.file) {
        const fileName = req.file.filename;
-       const filePath = "/uploads/products/"+fileName
+       const filePath = "public/uploads/products/"+fileName
        productData.product_photo = filePath;
      }
  

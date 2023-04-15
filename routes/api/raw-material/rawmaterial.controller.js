@@ -4,7 +4,7 @@ const multer = require('multer');
 // Set up multer storage engine
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-      cb(null, './uploads/rawmaterial');
+      cb(null, 'public/uploads/rawmaterial');
     },
     filename: (req, file, cb) => {
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
@@ -45,7 +45,7 @@ exports.createRawMaterial = (req, res) => {
    
       if (req.file) {
        const fileName = req.file.filename;
-       const filePath = "/uploads/rawmaterial/" + fileName;
+       const filePath = "public/uploads/rawmaterial/" + fileName;
        rawMaterialData.raw_material_photo = filePath;
      }
  
@@ -74,7 +74,7 @@ exports.updateRawMaterial = (req, res) => {
     // Check if a new file was uploaded
     if (req.file) {
       const fileName = req.file.filename;
-      const filePath = "/uploads/rawmaterial/" + fileName;
+      const filePath = "public/uploads/rawmaterial/" + fileName;
       rawMaterialData.raw_material_photo = filePath;
     }
 

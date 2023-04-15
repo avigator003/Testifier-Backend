@@ -4,7 +4,7 @@ const multer = require('multer');
 // Set up multer storage engine
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-      cb(null, './uploads/labour');
+      cb(null, 'public/uploads/labour');
     },
     filename: (req, file, cb) => {
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
@@ -46,7 +46,7 @@ exports.createLabour = (req, res) => {
       let filePath = null; 
       if (req.file) {
        const fileName = req.file.filename;
-       const filePath = "/uploads/labour/" + fileName;
+       const filePath = "public/uploads/labour/" + fileName;
        labourData.labour_profile = filePath;
      }
 
@@ -74,7 +74,7 @@ exports.updateLabour = (req, res) => {
     // Check if a new file was uploaded
     if (req.file) {
       const fileName = req.file.filename;
-      const filePath = "/uploads/labour/" + fileName;
+      const filePath = "public/uploads/labour/" + fileName;
       labourData.labour_profile = filePath;
     }
 
