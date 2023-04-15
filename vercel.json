@@ -11,5 +11,10 @@
        "src": "/.*",
        "dest": "index.js"
      }
-  ]
+  ],
+  "files": {
+    "include": [
+      "public/**/*"
+    ]
+  }
 }
