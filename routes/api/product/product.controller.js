@@ -1,4 +1,4 @@
-const Product = require('../../../Models/Product')
+const Product = require('../../../Models/product')
 const multer = require('multer');
 
 // Set up multer storage engine
