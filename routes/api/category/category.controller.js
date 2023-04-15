@@ -42,9 +42,15 @@ exports.createCategory = (req, res) => {
       if (err) {
         return res.status(400).json({ success: false, message: 'Error uploading file.' });
       }
-      const categoryData = { ...req.body };  
-      const fileName = req.file.filename; // Get the name of the uploaded file
-      const filePath="/uploads/categories/"+fileName
+
+      const categoryData = { ...req.body };
+      // Check if a new file was uploaded
+      let filePath = null; 
+      if (req.file) {
+       const fileName = req.file.filename;
+       const filePath = "/uploads/categories/"+fileName
+       userData.user_profile = filePath;
+     }
       Category.create({ ...categoryData, category_photo: filePath})
         .then((data) => {
           res.status(200).json({ success: true, message: 'Category Created', data });
