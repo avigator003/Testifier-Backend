@@ -40,7 +40,7 @@ exports.createCategory = (req, res) => {
     const uploadMiddleware = upload.single('category_photo');
     uploadMiddleware(req, res, (err) => {
       if (err) {
-        return res.status(400).json({ success: false, message: 'Error uploading file.' });
+        return res.status(400).json({ success: false, message: 'Error uploading file.'+err });
       }
 
       const categoryData = { ...req.body };
