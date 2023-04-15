@@ -46,7 +46,8 @@ app.get('/', (req, res) => {
 
 // configure api router
 app.use('/api', require('./routes/api'))
-app.use('/uploads', express.static('uploads'));
+app.use('/uploads', express.static('public/uploads'));
+
 
 // open the server
 app.listen(port, () => {
