@@ -268,6 +268,22 @@ exports.loginByMobileNumber = (req, res) => {
   });
 }
 
+exports.loginByMobileNumberAndPassword = (req, res) => {
+  const mobileNumber = req.body.mobileNumber;
+  const password = req.body.password;
+
+  User.find({ mobile_number: mobileNumber, password: password }).then(data => {
+    if (data.length > 0) {
+      res.status(200).json({ 'success': true, 'message': 'user fetched', 'data': data });
+    } else {
+      res.status(400).json({ 'success': false, 'message': 'user not found', 'data': null });
+    }
+  }).catch(err => {
+    console.log(err)
+    res.status(400).json({ 'success': false, 'message': err });
+  });
+}
+
 exports.viewUserByMobileNumber = (req, res) => {
   User.findOne({ mobileNumber: req.params.mobileNumber }).then(data => {
     if (!data) {
