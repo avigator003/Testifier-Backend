@@ -194,13 +194,13 @@ exports.donwloadInvoice = async (req, res) => {
 
   easyinvoice.createInvoice(data, async function (result) {
     var orderPdfName = `order-${orderId}.pdf`
-    var filePath = `invoices/${orderPdfName}`;
+    var filePath = `public/invoices/${orderPdfName}`;
     await fs.writeFileSync(filePath, result.pdf, 'base64');
 
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="${filePath}"`);
     res.status(200);
-
+xw
     const fileStream = fs.createReadStream(filePath);
     fileStream.pipe(res);
   })
