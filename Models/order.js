@@ -10,7 +10,7 @@ const Order = new Schema({
     }],
     status: {type:String,default:'Pending'},
     invoiceNumber:{type:Number},
-    user: { type: Schema.Types.ObjectId, ref: "User",default:'642f390117bb910d48869cfe'}
+    user: { type: Schema.Types.ObjectId, ref: "User"}
   }, schemaOptions);
   
   module.exports = mongoose.model('Order', Order);

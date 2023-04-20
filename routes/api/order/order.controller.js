@@ -26,7 +26,6 @@ exports.deletOrder = (req, res) => {
 
 }
 
-
 // Create New Order
 exports.createOrder = async (req, res) => {
   try {
