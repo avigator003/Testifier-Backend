@@ -2,6 +2,8 @@ const { Invoice } = require('react-simple-invoice');
 const Order = require('../../../Models/order')
 const easyinvoice = require('easyinvoice');
 const fs = require('fs')
+const Product = require('../../../Models/product')
+const moment = require('moment-timezone');
 
 exports.list = (req, res) => {
   Order.find().populate({
@@ -23,19 +25,43 @@ exports.deletOrder = (req, res) => {
   }).catch(err => {
     res.status(400).json({ 'success': false, 'message': err });
   })
-
 }
 
-// Create New Order
+
 exports.createOrder = async (req, res) => {
   try {
-    var orderData = req.body
+    const { products, userId } = req.body;
+    const currentDate = new Date()
+    // currentDate.setHours(23);
+    // currentDate.setMinutes(59);
+    // currentDate.setSeconds(59);
+    // currentDate.setMilliseconds(999);
+    const productPromises = products.products.map((p) =>
+      Product.findById(p.product)
+        .populate('product_category')
+        .exec()
+    );
+
+    const productsData = await Promise.all(productPromises);
+
+    let totalPrice = 0;
+
+    // calculate the total price of all products
+    for (let i = 0; i < products.products.length; i++) {
+      const { quantity } = products.products[i];
+      const priceForUser = productsData[i].prices.find((price) => {
+        return price.users.some((user) => user.toString() === userId);
+      });
+      totalPrice += priceForUser.price * quantity;
+    }
+
     const count = await Order.countDocuments();
     const invoiceNumber = count + 1;
-    const order = new Order({ ...orderData, invoiceNumber });
+    const order = new Order({ ...req.body, invoiceNumber, totalPrice, user: userId, orderDate: currentDate });
     await order.save();
     res.status(200).json({ success: true, message: 'Order Created', data: order });
   } catch (error) {
+    console.log('err', error);
     res.status(400).json({ success: false, message: error.message });
   }
 };
@@ -60,18 +86,92 @@ exports.updateOrder = (req, res) => {
 // Update Order Status
 exports.updateOrderStatus = (req, res) => {
   const newStatus = req.body.status;
-  Order.findByIdAndUpdate(
-    req.params.id,
-    { status: newStatus },
-    { new: true }
-  )
+  const { payment, paymentStatus } = req.body;
+
+  // Find the order by ID
+  Order.findById(req.params.id)
+    .then((order) => {
+      if (!order) {
+        throw new Error('Order not found');
+      }
+      // Calculate the remaining balance
+      const remainingBalance = order.totalPrice - payment;
+
+      if (remainingBalance < 0) {
+        // Payment is more than total price
+        throw new Error('Payment is more than the total price');
+      }
+
+      // Update the order with new status and payment information
+      order.status = newStatus;
+      order.paymentStatus = paymentStatus;
+      if (paymentStatus === 'Paid') {
+        order.duePayment = 0;
+      } else {
+        order.duePayment = remainingBalance;
+      }
+      const date= new Date();
+      date.setHours(23);
+      date.setMinutes(59);
+      date.setSeconds(59);
+      date.setMilliseconds(999);
+      if (payment) {
+        const paymentDate = new Date();
+        order.paymentDate = paymentDate;
+      }
+      return order.save();
+    })
     .then((data) => {
       res.status(200).json({ success: true, message: 'Order status updated', data });
     })
     .catch((err) => {
-      res.status(400).json({ success: false, message: err });
+      res.status(400).json({ success: false, message: err.message });
     });
 };
+
+
+exports.updatePaymentStatus = (req, res) => {
+  const { paymentStatus, payment } = req.body;
+
+  // Find the order by ID
+  Order.findById(req.params.id)
+    .then((order) => {
+      if (!order) {
+        throw new Error('Order not found');
+      }
+
+      // Update the order with new payment status
+      order.paymentStatus = paymentStatus;
+
+      if (paymentStatus === 'Paid') {
+        // If payment status is Paid, set due payment to 0
+        order.duePayment = 0;
+      } else if (paymentStatus === 'Partial Payment') {
+        // If payment status is Partial Payment, calculate the remaining balance
+        const remainingBalance = order.totalPrice - payment;
+
+        if (remainingBalance < 0) {
+          // Payment is more than total price
+          throw new Error('Payment is more than the total price');
+        }
+
+        order.duePayment = remainingBalance;
+      } else {
+        // If payment status is Unpaid, set due payment to total price
+        order.duePayment = order.totalPrice;
+      }
+
+      // Save the updated order
+      return order.save();
+    })
+    .then((data) => {
+      res.status(200).json({ success: true, message: 'Payment status updated', data });
+    })
+    .catch((err) => {
+      res.status(400).json({ success: false, message: err.message });
+    });
+};
+
 
 
 exports.viewOrder = (req, res) => {
@@ -82,15 +182,14 @@ exports.viewOrder = (req, res) => {
   })
 }
 
-
 exports.viewOrderByDateOrUser = (req, res) => {
-  const { date, user } = req.body;
-  console.log("Date",date,user)
+  const { date, userId } = req.body;
+  const user = userId;
 
   let query = {};
   if (date && user) {
     query = {
-      created_at: {
+      orderDate: {
         $gte: new Date(date),
         $lt: new Date(date + 'T23:59:59.999Z')
       },
@@ -98,7 +197,7 @@ exports.viewOrderByDateOrUser = (req, res) => {
     };
   } else if (date) {
     query = {
-      created_at: {
+      orderDate: {
         $gte: new Date(date),
         $lt: new Date(date + 'T23:59:59.999Z')
       }
@@ -118,9 +217,10 @@ exports.viewOrderByDateOrUser = (req, res) => {
     })
 }
 
+
 exports.donwloadInvoice = async (req, res) => {
   var orderId = req.params.id;
-  var invoiceNumber=0;
+  var invoiceNumber = 0;
   const productsList = await Order.findById(orderId)
     .populate({
       path: 'products.product',
@@ -131,7 +231,7 @@ exports.donwloadInvoice = async (req, res) => {
     })
     .populate("user")
     .then(order => {
-     invoiceNumber=order?.invoiceNumber;
+      invoiceNumber = order?.invoiceNumber;
       const userId = order.user._id
       const products = order.products.map(productObj => {
         const product = productObj.product;
@@ -199,7 +299,7 @@ exports.donwloadInvoice = async (req, res) => {
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="${filePath}"`);
     res.status(200);
-xw
+    xw
     const fileStream = fs.createReadStream(filePath);
     fileStream.pipe(res);
   })

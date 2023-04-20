@@ -92,7 +92,7 @@ exports.showAll = (req, res) => {
     .populate('product_category')
     .exec((err, data) => {
       if (err) {
-        res.status(400).json({ status: false, message: error })
+        res.status(400).json({ status: false, message: err })
         return;
       }
       res.status(200).json({ status: true, message: "Product list fetched", data })

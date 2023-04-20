@@ -12,7 +12,7 @@ LOAD THE CONFIG
 ==========================*/
 const config = require('./config')
 const port = process.env.PORT || 5001
-
+process.env.TZ = 'Asia/Kolkata'; 
 /* =======================
 EXPRESS CONFIGURATION
 ==========================*/
@@ -62,7 +62,8 @@ app.listen(port, () => {
 mongoose.connect(config.mongodbUri,
     {useNewUrlParser: true, 
      useUnifiedTopology: true ,
-     useCreateIndex:true })
+     useCreateIndex:true,
+     timezone: 'Asia/Kolkata' })
      
 mongoose.Promise = global.Promise
 const db = mongoose.connection
