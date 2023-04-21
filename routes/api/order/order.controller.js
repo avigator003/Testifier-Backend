@@ -66,7 +66,6 @@ exports.createOrder = async (req, res) => {
   }
 };
 
-
 exports.updateOrder = async (req, res) => {
   try {
     const { products, userId } = req.body;
@@ -83,7 +82,6 @@ exports.updateOrder = async (req, res) => {
       })
       .exec();
 
-
     // Update the quantities of the products in the order
     for (let i = 0; i < products.products.length; i++) {
       const { product: productId, quantity } = products.products[i];
@@ -93,8 +91,30 @@ exports.updateOrder = async (req, res) => {
       if (productIndex !== -1) {
         order.products[productIndex].quantity = quantity;
       }
+      else {
+        // Product not found in the order, add it to the array
+        const productData = await Product.findById(productId)
+          .populate('product_category')
+          .exec();
+        order.products.push({ product: productData, quantity });
+      }
     }
 
+    // Check if any products were removed from the database and update the order accordingly
+    const orderProductIds = order.products.map((p) => p.product._id.toString());
+    const databaseProductIds = products.products.map((p) => p.product.toString());
+    const removedProductIds = orderProductIds.filter((id) => !databaseProductIds.includes(id));
+    if (removedProductIds.length > 0) {
+      // Remove the products from the order that were removed from the database
+      for (let i = 0; i < removedProductIds.length; i++) {
+        const productIndex = order.products.findIndex((p) => p.product._id.toString() === removedProductIds[i]);
+        if (productIndex !== -1) {
+          order.products.splice(productIndex, 1);
+        }
+      }
+    }
+
+    console.log("rord",order)
     // Recalculate the total price of the order based on the updated product quantities
     let totalPrice = 0;
     for (let i = 0; i < order.products.length; i++) {
@@ -102,11 +122,13 @@ exports.updateOrder = async (req, res) => {
       const priceForUser = product.prices.find((price) => {
         return price.users.some((user) => user.toString() === userId);
       });
-      totalPrice += priceForUser?.price * quantity;
+      if (priceForUser && priceForUser.price) {
+        totalPrice += priceForUser.price * quantity;
+      }
     }
 
     // Update the order data and save it to the database
-    order.totalPrice = totalPrice;
+    order.totalPrice = totalPrice || 0;
     order.orderDate = currentDate;
     const updatedOrder = await order.save();
     res.status(200).json({ success: true, message: 'Order Updated', data: updatedOrder });
@@ -115,6 +137,7 @@ exports.updateOrder = async (req, res) => {
     res.status(400).json({ success: false, message: error.message });
   }
 };
+
 
 
 // Update Order Status
