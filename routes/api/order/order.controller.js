@@ -52,7 +52,7 @@ exports.createOrder = async (req, res) => {
       const priceForUser = productsData[i].prices.find((price) => {
         return price.users.some((user) => user.toString() === userId);
       });
-      totalPrice += priceForUser.price * quantity;
+      totalPrice += priceForUser?.price * quantity;
     }
 
     const count = await Order.countDocuments();
@@ -67,21 +67,55 @@ exports.createOrder = async (req, res) => {
 };
 
 
-// Update Order
-exports.updateOrder = (req, res) => {
-  var orderData = req.body
-  Order.findByIdAndUpdate(
-    req.params.id,
-    orderData,
-    { new: true }
-  )
-    .then((data) => {
-      res.status(200).json({ success: true, message: 'Order Updated', data });
-    })
-    .catch((err) => {
-      res.status(400).json({ success: false, message: err });
-    });
+exports.updateOrder = async (req, res) => {
+  try {
+    const { products, userId } = req.body;
+    const currentDate = new Date();
+
+    // Get the order data from the database
+    const order = await Order.findById(req.params.id)
+      .populate({
+        path: 'products.product',
+        populate: {
+          path: 'prices.user',
+          model: 'User'
+        }
+      })
+      .exec();
+
+
+    // Update the quantities of the products in the order
+    for (let i = 0; i < products.products.length; i++) {
+      const { product: productId, quantity } = products.products[i];
+      const productIndex = order.products.findIndex(
+        (p) => p.product._id.toString() === productId.toString()
+      );
+      if (productIndex !== -1) {
+        order.products[productIndex].quantity = quantity;
+      }
+    }
+
+    // Recalculate the total price of the order based on the updated product quantities
+    let totalPrice = 0;
+    for (let i = 0; i < order.products.length; i++) {
+      const { product, quantity } = order.products[i];
+      const priceForUser = product.prices.find((price) => {
+        return price.users.some((user) => user.toString() === userId);
+      });
+      totalPrice += priceForUser?.price * quantity;
+    }
+
+    // Update the order data and save it to the database
+    order.totalPrice = totalPrice;
+    order.orderDate = currentDate;
+    const updatedOrder = await order.save();
+    res.status(200).json({ success: true, message: 'Order Updated', data: updatedOrder });
+  } catch (error) {
+    console.log('err', error);
+    res.status(400).json({ success: false, message: error.message });
+  }
 };
+
 
 // Update Order Status
 exports.updateOrderStatus = (req, res) => {
@@ -183,23 +217,23 @@ exports.viewOrder = (req, res) => {
 }
 
 exports.viewOrderByDateOrUser = (req, res) => {
-  const { date, userId } = req.body;
+  const { startDate, endDate, userId } = req.body;
   const user = userId;
 
   let query = {};
-  if (date && user) {
+  if (startDate && endDate && user) {
     query = {
       orderDate: {
-        $gte: new Date(date),
-        $lt: new Date(date + 'T23:59:59.999Z')
+        $gte: new Date(startDate),
+        $lt: new Date(endDate + 'T23:59:59.999Z')
       },
       user: user
     };
-  } else if (date) {
+  } else if (startDate && endDate) {
     query = {
       orderDate: {
-        $gte: new Date(date),
-        $lt: new Date(date + 'T23:59:59.999Z')
+        $gte: new Date(startDate),
+        $lt: new Date(endDate + 'T23:59:59.999Z')
       }
     };
   } else if (user) {

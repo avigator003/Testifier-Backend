@@ -85,9 +85,16 @@ exports.updateProduct = (req, res) => {
 };
 
 
-//Show all 
 exports.showAll = (req, res) => {
-    Product.find({})
+  const { categoryId } = req.body;
+  console.log(":Req",req.body,categoryId)
+  let query = {};
+
+  if (categoryId) {
+    query.product_category = categoryId;
+  }
+
+  Product.find(query)
     .populate('prices.users')
     .populate('product_category')
     .exec((err, data) => {
