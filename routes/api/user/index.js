@@ -9,4 +9,5 @@ router.get('/view/:id', controller.viewUser)
 router.post('/login/:mobileNumber', controller.loginByMobileNumber)
 router.post('/login', controller.loginByMobileNumberAndPassword)
 router.get('/view/:mobileNumber', controller.viewUserByMobileNumber)
+router.get('/dashboard_details', controller.dashboardDetails)
 module.exports = router
