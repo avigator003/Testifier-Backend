@@ -87,7 +87,6 @@ exports.updateProduct = (req, res) => {
 
 exports.showAll = (req, res) => {
   const { categoryId } = req.body;
-  console.log(":Req",req.body,categoryId)
   let query = {};
 
   if (categoryId) {

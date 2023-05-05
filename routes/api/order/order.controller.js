@@ -27,15 +27,10 @@ exports.deletOrder = (req, res) => {
   })
 }
 
-
 exports.createOrder = async (req, res) => {
   try {
     const { products, userId } = req.body;
     const currentDate = new Date()
-    // currentDate.setHours(23);
-    // currentDate.setMinutes(59);
-    // currentDate.setSeconds(59);
-    // currentDate.setMilliseconds(999);
     const productPromises = products.products.map((p) =>
       Product.findById(p.product)
         .populate('product_category')
@@ -47,17 +42,37 @@ exports.createOrder = async (req, res) => {
     let totalPrice = 0;
 
     // calculate the total price of all products
-    for (let i = 0; i < products.products.length; i++) {
+    for (let i = 0; i < productsData.length; i++) {
       const { quantity } = products.products[i];
+
       const priceForUser = productsData[i].prices.find((price) => {
         return price.users.some((user) => user.toString() === userId);
       });
+
       totalPrice += priceForUser?.price * quantity;
     }
 
     const count = await Order.countDocuments();
     const invoiceNumber = count + 1;
-    const order = new Order({ ...req.body, invoiceNumber, totalPrice, user: userId, orderDate: currentDate });
+    const orderProducts = products.products.map(({ product, quantity }) => ({
+      product,
+      quantity
+    }));
+
+    // Find all unpaid orders for the user and calculate the total due amount
+    const previousOrders = await Order.find({ user: userId}).sort('-createdAt');
+    const previousDueAmount = previousOrders.length ? previousOrders[previousOrders.length-1].duePayment : 0;
+
+    // Create the new order and set its due amount to the total price plus the previous due amount (if any)
+    const order = new Order({
+      products: orderProducts,
+      invoiceNumber,
+      totalPrice,
+      user: userId,
+      orderDate: currentDate,
+      duePayment: totalPrice + previousDueAmount
+    });
+
     await order.save();
     res.status(200).json({ success: true, message: 'Order Created', data: order });
   } catch (error) {
@@ -65,6 +80,7 @@ exports.createOrder = async (req, res) => {
     res.status(400).json({ success: false, message: error.message });
   }
 };
+
 
 exports.updateOrder = async (req, res) => {
   try {
@@ -114,7 +130,6 @@ exports.updateOrder = async (req, res) => {
       }
     }
 
-    console.log("rord",order)
     // Recalculate the total price of the order based on the updated product quantities
     let totalPrice = 0;
     for (let i = 0; i < order.products.length; i++) {
@@ -143,7 +158,6 @@ exports.updateOrder = async (req, res) => {
 // Update Order Status
 exports.updateOrderStatus = (req, res) => {
   const newStatus = req.body.status;
-  const { payment, paymentStatus } = req.body;
 
   // Find the order by ID
   Order.findById(req.params.id)
@@ -152,30 +166,15 @@ exports.updateOrderStatus = (req, res) => {
         throw new Error('Order not found');
       }
       // Calculate the remaining balance
-      const remainingBalance = order.totalPrice - payment;
 
-      if (remainingBalance < 0) {
-        // Payment is more than total price
-        throw new Error('Payment is more than the total price');
-      }
 
       // Update the order with new status and payment information
       order.status = newStatus;
-      order.paymentStatus = paymentStatus;
-      if (paymentStatus === 'Paid') {
-        order.duePayment = 0;
-      } else {
-        order.duePayment = remainingBalance;
-      }
-      const date= new Date();
+      const date = new Date();
       date.setHours(23);
       date.setMinutes(59);
       date.setSeconds(59);
       date.setMilliseconds(999);
-      if (payment) {
-        const paymentDate = new Date();
-        order.paymentDate = paymentDate;
-      }
       return order.save();
     })
     .then((data) => {
@@ -186,49 +185,59 @@ exports.updateOrderStatus = (req, res) => {
     });
 };
 
+exports.updatePaymentStatus = async (req, res) => {
+  try {
+    const { paymentStatus, payment } = req.body;
 
-exports.updatePaymentStatus = (req, res) => {
-  const { paymentStatus, payment } = req.body;
+    const order = await Order.findById(req.params.id).exec();
+    if (!order) {
+      throw new Error('Order not found');
+    }
 
-  // Find the order by ID
-  Order.findById(req.params.id)
-    .then((order) => {
-      if (!order) {
-        throw new Error('Order not found');
-      }
+    const orders = await Order.find({
+      user: order.user,
+      paymentStatus: { $ne: 'Cancelled' }
+    }).sort({ createdAt: 1 }).exec();
 
-      // Update the order with new payment status
-      order.paymentStatus = paymentStatus;
+    let previousDueAmount = 0;
+    const index = orders.findIndex((o) => o._id.toString() === order._id.toString())
+    if (index > 0) {
+      previousDueAmount = orders.slice(0, index).reduce((acc, val) => acc + val.duePayment, 0)
+    }
 
-      if (paymentStatus === 'Paid') {
-        // If payment status is Paid, set due payment to 0
-        order.duePayment = 0;
-      } else if (paymentStatus === 'Partial Payment') {
-        // If payment status is Partial Payment, calculate the remaining balance
-        const remainingBalance = order.totalPrice - payment;
+    const newDueAmount = order.duePayment - payment;
+    let updatedLastDueAmount = newDueAmount;
+    order.paymentStatus = paymentStatus;
+    order.paidAmount = Number(order.paidAmount)+Number(payment);
+    order.duePayment = newDueAmount;
+    await order.save();
 
-        if (remainingBalance < 0) {
-          // Payment is more than total price
-          throw new Error('Payment is more than the total price');
+    const unpaidOrders = orders.filter((o) => o.paymentStatus === 'Unpaid' || o.paymentStatus === 'Partial Payment');
+
+    for (let i = 0; i < unpaidOrders.length; i++) {
+      const unpaidOrder = unpaidOrders[i];
+      if (unpaidOrder._id.toString() !== order._id.toString()) {
+        if (unpaidOrder.orderDate >= order.orderDate) {
+          previousDueAmount += unpaidOrder.totalPrice;
+          unpaidOrder.duePayment = unpaidOrder.totalPrice + updatedLastDueAmount - unpaidOrder.paidAmount;
+          updatedLastDueAmount = unpaidOrder.duePayment;
+          await unpaidOrder.save();
         }
-
-        order.duePayment = remainingBalance;
-      } else {
-        // If payment status is Unpaid, set due payment to total price
-        order.duePayment = order.totalPrice;
       }
+    }
 
-      // Save the updated order
-      return order.save();
-    })
-    .then((data) => {
-      res.status(200).json({ success: true, message: 'Payment status updated', data });
-    })
-    .catch((err) => {
-      res.status(400).json({ success: false, message: err.message });
+    res.status(200).json({
+      success: true,
+      order
     });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: 'An error occurred while updating payment status'
+    });
+  }
 };
-
 
 
 exports.viewOrder = (req, res) => {
