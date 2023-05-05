@@ -1,5 +1,6 @@
 const { Invoice } = require('react-simple-invoice');
 const Order = require('../../../Models/order')
+const User = require('../../../Models/user')
 const easyinvoice = require('easyinvoice');
 const fs = require('fs')
 const Product = require('../../../Models/product')
@@ -44,10 +45,18 @@ exports.createOrder = async (req, res) => {
     // calculate the total price of all products
     for (let i = 0; i < productsData.length; i++) {
       const { quantity } = products.products[i];
-
       const priceForUser = productsData[i].prices.find((price) => {
         return price.users.some((user) => user.toString() === userId);
       });
+
+      if (!priceForUser) {
+        const productName = productsData[i]?.product_name;
+        const userName = await User.findById(userId).select('user_name').exec();
+        return res.status(200).json({
+          success: false,
+          message: `The price for product ${productName} is not associated with user ${userName.user_name}.`
+        });
+      }
 
       totalPrice += priceForUser?.price * quantity;
     }
@@ -60,7 +69,15 @@ exports.createOrder = async (req, res) => {
     }));
 
     // Find all unpaid orders for the user and calculate the total due amount
-    const previousOrders = await Order.find({ user: userId}).sort('-createdAt');
+    const previousOrders = await Order.find({ user: userId }).sort('-createdAt');
+    const uncompletedOrders = previousOrders.filter(order => order.status !== 'Completed');
+    if (uncompletedOrders.length > 0) {
+      return res.status(200).json({
+        success: false,
+        message: 'You have uncompleted orders. Please complete your previous orders before creating a new one.'
+      });
+    }
+    
     const previousDueAmount = previousOrders.length ? previousOrders[previousOrders.length-1].duePayment : 0;
 
     // Create the new order and set its due amount to the total price plus the previous due amount (if any)
@@ -194,6 +211,8 @@ exports.updatePaymentStatus = async (req, res) => {
       throw new Error('Order not found');
     }
 
+    const userId=order.user;
+
     const orders = await Order.find({
       user: order.user,
       paymentStatus: { $ne: 'Cancelled' }
@@ -225,6 +244,20 @@ exports.updatePaymentStatus = async (req, res) => {
         }
       }
     }
+
+    if (paymentStatus === 'Paid') {
+      const userOrders = await Order.find({ user: order.user }).exec();
+      for (let i = 0; i < userOrders.length; i++) {
+        const userOrder = userOrders[i];
+        userOrder.paidAmount = userOrder.totalPrice;
+        userOrder.duePayment = 0;
+        userOrder.paymentStatus="Paid"
+        await userOrder.save();
+      }
+    }
+
+
+
 
     res.status(200).json({
       success: true,
