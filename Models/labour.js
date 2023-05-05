@@ -11,7 +11,7 @@ const Labour = new Schema({
     city:String,
     address: String,
     salary:Number,
-    date_of_birth: {type: Date,required: false},
+    date_of_birth: {type: Date,required: false, null: true },
     salary_history: [{ created_at: { type: String} ,status:String, advance_payment: { type: Number, default: 0} , advance_payment_date: { type: Date, default: Date.now }}],
     attendance_history: [{ created_at: { type: Date},status:String}],
 }, schemaOptions)

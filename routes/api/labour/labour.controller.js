@@ -50,13 +50,24 @@ exports.createLabour = (req, res) => {
        labourData.labour_profile = filePath;
      }
 
-      Labour.create({ ...labourData, labour_profile: filePath})
+     
+    // Check if mobile number already exists
+    Labour.findOne({ mobile_number: labourData.mobile_number }, (err, labour) => {
+      if (err) {
+        return res.status(400).json({ success: false, message: err });
+      }
+      if (labour) {
+        return res.status(200).json({ success: false, message: `Mobile number already registered with ${labour?.user_name}` });
+      }
+
+      Labour.create({ ...labourData, labour_profile: filePath })
         .then((data) => {
-          res.status(200).json({ success: true, message: 'Labour Created', data });
+          res.status(200).json({ success: true, message: 'Labour Created Successfully', data });
         })
         .catch((err) => {
           res.status(400).json({ success: false, message: err });
         });
+    });
     });
   };
 
@@ -78,17 +89,27 @@ exports.updateLabour = (req, res) => {
       labourData.labour_profile = filePath;
     }
 
-    Labour.findByIdAndUpdate(
-      req.params.id,
-      labourData,
-      { new: true }
-    )
-      .then((data) => {
-        res.status(200).json({ success: true, message: 'Labour Updated', data });
-      })
-      .catch((err) => {
-        res.status(400).json({ success: false, message: err });
-      });
+     // Check if mobile number already exists
+     Labour.findOne({ mobile_number: labourData.mobile_number }, (err, labour) => {
+      if (err) {
+        return res.status(400).json({ success: false, message: err });
+      }
+      if (labour && labour._id.toString() !== req.params.id) {
+        return res.status(200).json({ success: false, message: `Mobile number already registered with ${labour?.user_name}` });
+      }
+
+      Labour.findByIdAndUpdate(
+        req.params.id,
+        labourData,
+        { new: true }
+      )
+        .then((data) => {
+          res.status(200).json({ success: true, message: 'Labout Updated Successfully', data });
+        })
+        .catch((err) => {
+          res.status(400).json({ success: false, message: err });
+        });
+    });
   });
 };
 

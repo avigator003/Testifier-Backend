@@ -16,7 +16,7 @@ const User = new Schema({
     state:String,
     city:String,
     address: String,
-    date_of_birth: {type: Date,required: false},
+    date_of_birth: {type: Date,required: false, null: true },
     vehicle_number: String,
 }, schemaOptions)
 

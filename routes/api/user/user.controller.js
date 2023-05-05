@@ -186,7 +186,6 @@ exports.deleteUser = (req, res) => {
 }
 
 
-// Update user
 exports.createUser = (req, res) => {
   const uploadMiddleware = upload.single('user_profile');
   uploadMiddleware(req, res, (err) => {
@@ -198,21 +197,32 @@ exports.createUser = (req, res) => {
      let filePath = null; 
      if (req.file) {
       const fileName = req.file.filename;
-      const filePath = "public/uploads/users/" + fileName;
+      filePath = "public/uploads/users/" + fileName;
       userData.user_profile = filePath;
     }
 
-    User.create({ ...userData, user_profile: filePath})
-      .then((data) => {
-        res.status(200).json({ success: true, message: 'User Updated', data });
-      })
-      .catch((err) => {
-        console.log("error1", err)
+   
 
-        res.status(400).json({ success: false, message: err });
-      });
+    // Check if mobile number already exists
+    User.findOne({ mobile_number: userData.mobile_number }, (err, user) => {
+      if (err) {
+        return res.status(400).json({ success: false, message: err });
+      }
+      if (user) {
+        return res.status(200).json({ success: false, message: `Mobile number already registered with ${user?.user_name}` });
+      }
+
+      User.create({ ...userData, user_profile: filePath })
+        .then((data) => {
+          res.status(200).json({ success: true, message: 'User Created Successfully', data });
+        })
+        .catch((err) => {
+          res.status(400).json({ success: false, message: err });
+        });
+    });
   });
 };
+
 
 // Update user
 exports.updateUser = (req, res) => {
@@ -230,18 +240,28 @@ exports.updateUser = (req, res) => {
       userData.user_profile = filePath;
     }
 
-    User.findByIdAndUpdate(
-      req.params.id,
-      userData,
-      { new: true }
-    )
-      .then((data) => {
-        res.status(200).json({ success: true, message: 'User Updated', data });
-      })
-      .catch((err) => {
-        console.log("eerr1",err)
-        res.status(400).json({ success: false, message: err });
-      });
+    // Check if mobile number already exists
+    User.findOne({ mobile_number: userData.mobile_number }, (err, user) => {
+      if (err) {
+        return res.status(400).json({ success: false, message: err });
+      }
+      if (user && user._id.toString() !== req.params.id) {
+        return res.status(200).json({ success: false, message: `Mobile number already registered with ${user?.user_name}` });
+      }
+
+      User.findByIdAndUpdate(
+        req.params.id,
+        userData,
+        { new: true }
+      )
+        .then((data) => {
+          res.status(200).json({ success: true, message: 'User Updated Successfully', data });
+        })
+        .catch((err) => {
+          console.log("eerr1",err)
+          res.status(400).json({ success: false, message: err });
+        });
+    });
   });
 };
 
