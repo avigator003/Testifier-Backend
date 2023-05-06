@@ -56,15 +56,27 @@ exports.count = (req, res) => {
     GET /api/user/list
 */
 
-exports.list = (req, res) => {
-  User.find({}, '-password').exec()
-    .then(
-      users => {
-        res.json({ users })
-      }
-    )
-}
 
+exports.list = (req, res) => {
+  const { admin } = req.body
+  var isAdminFilter = admin === undefined || null
+  if (!isAdminFilter) {
+    User.find({ admin: false }, '-password').exec()
+      .then(
+        users => {
+          res.json({ users })
+        }
+      )
+  }
+  else {
+    User.find({}, '-password').exec()
+      .then(
+        users => {
+          res.json({ users })
+        }
+      )
+  }
+}
 
 /*
     POST /api/user/assign-admin/:username
@@ -246,7 +258,7 @@ exports.updateUser = (req, res) => {
         return res.status(400).json({ success: false, message: err });
       }
       if (user && user._id.toString() !== req.params.id) {
-        return res.status(200).json({ success: false, message: `Mobile number already registered with ${user?.user_name}` });
+        return res.status(200).json({ success: false, message: 'Mobile number already registered', username: user.user_name });
       }
 
       User.findByIdAndUpdate(

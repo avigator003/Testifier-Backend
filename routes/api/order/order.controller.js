@@ -32,7 +32,7 @@ exports.createOrder = async (req, res) => {
   try {
     const { products, userId } = req.body;
     const currentDate = new Date()
-    const productPromises = products.products.map((p) =>
+    const productPromises = products.map((p) =>
       Product.findById(p.product)
         .populate('product_category')
         .exec()
@@ -44,7 +44,7 @@ exports.createOrder = async (req, res) => {
 
     // calculate the total price of all products
     for (let i = 0; i < productsData.length; i++) {
-      const { quantity } = products.products[i];
+      const { quantity } = products[i];
       const priceForUser = productsData[i].prices.find((price) => {
         return price.users.some((user) => user.toString() === userId);
       });
@@ -63,7 +63,7 @@ exports.createOrder = async (req, res) => {
 
     const count = await Order.countDocuments();
     const invoiceNumber = count + 1;
-    const orderProducts = products.products.map(({ product, quantity }) => ({
+    const orderProducts = products.map(({ product, quantity }) => ({
       product,
       quantity
     }));
@@ -116,8 +116,8 @@ exports.updateOrder = async (req, res) => {
       .exec();
 
     // Update the quantities of the products in the order
-    for (let i = 0; i < products.products.length; i++) {
-      const { product: productId, quantity } = products.products[i];
+    for (let i = 0; i < products.length; i++) {
+      const { product: productId, quantity } = products[i];
       const productIndex = order.products.findIndex(
         (p) => p.product._id.toString() === productId.toString()
       );
@@ -135,7 +135,7 @@ exports.updateOrder = async (req, res) => {
 
     // Check if any products were removed from the database and update the order accordingly
     const orderProductIds = order.products.map((p) => p.product._id.toString());
-    const databaseProductIds = products.products.map((p) => p.product.toString());
+    const databaseProductIds = products.map((p) => p.product.toString());
     const removedProductIds = orderProductIds.filter((id) => !databaseProductIds.includes(id));
     if (removedProductIds.length > 0) {
       // Remove the products from the order that were removed from the database
@@ -274,11 +274,14 @@ exports.updatePaymentStatus = async (req, res) => {
 
 
 exports.viewOrder = (req, res) => {
-  Order.findById(req.params.id).then(data => {
-    res.status(200).json({ 'success': true, 'message': 'order fetched', 'orders': data });
-  }).catch(err => {
-    res.status(400).json({ 'success': false, 'message': err });
-  })
+  Order.findById(req.params.id)
+    .populate('products.product', 'product_name price') // populate the 'product' field of the 'products' array with the specified fields
+    .exec()
+    .then(data => {
+      res.status(200).json({ 'success': true, 'message': 'order fetched', 'orders': data });
+    }).catch(err => {
+      res.status(400).json({ 'success': false, 'message': err });
+    })
 }
 
 exports.viewOrderByDateOrUser = (req, res) => {
