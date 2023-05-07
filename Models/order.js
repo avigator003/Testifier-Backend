@@ -16,10 +16,12 @@ const OrderSchema = new Schema({
   status: { type: String, default: 'Pending' },
   invoiceNumber: { type: Number },
   user: { type: Schema.Types.ObjectId, ref: 'User' },
-  totalPrice: { type: Number, default: 0 },
   paymentStatus: { type: String, default: 'Unpaid' },
-  duePayment: { type: Number, default: 0 },
+  totalPrice: { type: Number, default: 0 },
+  previousOrderDueAmount :{type :Number ,default :0 },
+  totalAmount :{type :Number ,default :0 },
   paidAmount :{type: Number, default: 0 },
+  duePayment: { type: Number, default: 0 },
   orderDate: { type: Date },
   paymentDate: { type: Date }
 }, schemaOptions);

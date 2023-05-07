@@ -80,6 +80,10 @@ exports.createOrder = async (req, res) => {
     
     const previousDueAmount = previousOrders.length ? previousOrders[previousOrders.length-1].duePayment : 0;
 
+    // Calculate the previousOrderDueAmount and totalAmount
+    const previousOrderDueAmount = previousOrders.length ? previousOrders[previousOrders.length-1].duePayment : 0;
+    const totalAmount = totalPrice + previousOrderDueAmount;
+
     // Create the new order and set its due amount to the total price plus the previous due amount (if any)
     const order = new Order({
       products: orderProducts,
@@ -87,7 +91,9 @@ exports.createOrder = async (req, res) => {
       totalPrice,
       user: userId,
       orderDate: currentDate,
-      duePayment: totalPrice + previousDueAmount
+      previousOrderDueAmount, // Set the previousOrderDueAmount
+      totalAmount, // Set the totalAmount
+      duePayment: totalAmount, // Set the duePayment to the totalAmount
     });
 
     await order.save();
@@ -97,6 +103,7 @@ exports.createOrder = async (req, res) => {
     res.status(400).json({ success: false, message: error.message });
   }
 };
+
 
 
 exports.updateOrder = async (req, res) => {
@@ -250,7 +257,7 @@ exports.updatePaymentStatus = async (req, res) => {
       for (let i = 0; i < userOrders.length; i++) {
         const userOrder = userOrders[i];
         userOrder.paidAmount = userOrder.totalPrice;
-        userOrder.duePayment = 0;
+        userOrder.duePayment = userOrder.totalAmount-userOrder.totalPrice;
         userOrder.paymentStatus="Paid"
         await userOrder.save();
       }
