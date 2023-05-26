@@ -1,10 +1,11 @@
-const { Invoice } = require('react-simple-invoice');
+
 const Order = require('../../../Models/order')
 const User = require('../../../Models/user')
 const easyinvoice = require('easyinvoice');
 const fs = require('fs')
-const Product = require('../../../Models/product')
-const moment = require('moment-timezone');
+const Product = require('../../../Models/product');
+const { bucketName, s3, getPhoto } = require('../../..');
+const { PutObjectCommand, S3, S3Client, GetObjectCommand } = require('@aws-sdk/client-s3');
 
 exports.list = (req, res) => {
   Order.find().populate({
@@ -400,19 +401,37 @@ exports.donwloadInvoice = async (req, res) => {
     },
   };
 
-  easyinvoice.createInvoice(data, async function (result) {
-    var orderPdfName = `order-${orderId}.pdf`
-    var filePath = `public/invoices/${orderPdfName}`;
-    await fs.writeFileSync(filePath, result.pdf, 'base64');
-
+  const pdfBufferObject = await easyinvoice.createInvoice(data);
+  const pdfBuffer = Buffer.from(pdfBufferObject.pdf, 'base64');
+ 
+  var orderPdfName = `order-${orderId}.pdf`
+  const uploadParams = {
+    Bucket: bucketName,
+    Key: orderPdfName,
+    Body: pdfBuffer,
+    ContentEncoding: "base64", // required
+    ContentType: 'application/pdf',
+  };
+  try {
+    const command=new PutObjectCommand(uploadParams)
+    const response = await s3.send(command);
+  } catch (error) {
+    console.error('Error uploading PDF:', error);
+  }
+     const filePath=await getPhoto(orderPdfName);
+     console.log("fielPath",filePath);
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="${filePath}"`);
     res.status(200);
-    xw
-    const fileStream = fs.createReadStream(filePath);
-    fileStream.pipe(res);
-  })
+    
+    const getObjectParams = {
+      Bucket: bucketName,
+      Key: orderPdfName,
+    };
 
+    const getCommand = new GetObjectCommand(getObjectParams);
+    const response = await s3.send(getCommand);
+    response.Body.pipe(res);
 }
 
 

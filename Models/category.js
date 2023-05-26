@@ -8,6 +8,7 @@ const schemaOptions = {
 const Category = new Schema({
     category_name:String,
     category_description:String,
+    category_photo_name:String,
     category_photo:String
 },schemaOptions)
 

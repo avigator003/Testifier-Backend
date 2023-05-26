@@ -1,86 +1,74 @@
 const Category = require('../../../Models/category')
 const multer = require('multer');
-const fs = require('fs');
+const { deletePhoto, getPhoto, putPhoto } = require('../../../index');
 
-// Set up multer storage engine
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const dir = 'public/uploads/categories';
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
-    cb(null, dir);
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    cb(null, file.fieldname + '-' + uniqueSuffix + '.' + file.originalname.split('.').pop());
-  }
-});
+const storage = multer.memoryStorage()
+const upload = multer({ storage: storage })
 
-  // Initialize multer
-const upload = multer({ storage });
 
 
 exports.list = (req, res) => {
-    Category.find().then(data => {
-        res.status(200).json({ 'success': true, 'message': 'All category fetched', data});
-    }).catch(err => {
-        res.status(400).json({ 'success': false, 'message': err });
-    })
+  Category.find().then(data => {
+    res.status(200).json({ 'success': true, 'message': 'All category fetched', data });
+  }).catch(err => {
+    res.status(400).json({ 'success': false, 'message': err });
+  })
 }
 
 exports.deleteCategory = (req, res) => {
-    Category.findByIdAndRemove(req.params.id).then(data => {
-        res.status(200).json({ 'success': true, 'message': 'category removed' });
-    }).catch(err => {
-        res.status(400).json({ 'success': false, 'message': err });
-    })
+  Category.findByIdAndRemove(req.params.id).then(data => {
+    deletePhoto(data.category_photo_name)
+    res.status(200).json({ 'success': true, 'message': 'category removed' });
+  }).catch(err => {
+    res.status(400).json({ 'success': false, 'message': err });
+  })
 
 }
 
 
-// Create New Product
-exports.createCategory = (req, res) => {
-    const uploadMiddleware = upload.single('category_photo');
-    uploadMiddleware(req, res, (err) => {
+exports.createCategory = async (req, res) => {
+  try {
+    upload.single('category_photo')(req, res, async (err) => {
       if (err) {
-        return res.status(400).json({ success: false, message: 'Error uploading file.'+err });
+        return res.status(400).json({ success: false, message: 'Error uploading file.', error: err });
       }
-
       const categoryData = { ...req.body };
-      // Check if a new file was uploaded
-      let filePath = null; 
       if (req.file) {
-       const fileName = req.file.filename;
-       const filePath = "public/uploads/categories/"+fileName
-       userData.user_profile = filePath;
-     }
-      Category.create({ ...categoryData, category_photo: filePath})
-        .then((data) => {
-          res.status(200).json({ success: true, message: 'Category Created', data });
-        })
-        .catch((err) => {
-          res.status(400).json({ success: false, message: err });
-        });
+        const fileName = req.file.originalname;
+        await putPhoto(fileName, req.file.buffer, req.file.mimetype)
+        const url = await getPhoto(fileName);
+        categoryData.category_photo = url;
+        categoryData.category_photo_name = fileName
+      }
+      const category = await Category.create({ ...categoryData });
+      res.status(200).json({ success: true, message: 'Category Created', data: category });
     });
-  };
+  } catch (err) {
+    res.status(400).json({ success: false, message: err.message });
+  }
+};
 
 
 // Update category
 exports.updateCategory = (req, res) => {
-  const uploadMiddleware = upload.single('category_photo');
-  uploadMiddleware(req, res, (err) => {
+  upload.single('category_photo')(req, res, async (err) => {
     if (err) {
-      return res.status(400).json({ success: false, message: 'Error uploading file.' });
+      return res.status(400).json({ success: false, message: 'Error uploading file.', error: err });
     }
 
-    const categoryData = { ...req.body };  
+    const categoryData = { ...req.body };
 
     // Check if a new file was uploaded
     if (req.file) {
-      const fileName = req.file.filename;
-      const filePath = "public/uploads/categories/" + fileName;
-      categoryData.category_photo = filePath;
+      await Category.findById(req.params.id).then(data => {
+        deletePhoto(data.category_photo_name)
+      })
+
+      const fileName = req.file.originalname;
+      await putPhoto(fileName, req.file.buffer, req.file.mimetype)
+      const url = await getPhoto(fileName);
+      categoryData.category_photo = url;
+      categoryData.category_photo_name = fileName
     }
 
     Category.findByIdAndUpdate(
@@ -99,10 +87,11 @@ exports.updateCategory = (req, res) => {
 
 
 exports.viewCategory = (req, res) => {
-    Category.findById(req.params.id).then(data => {
-        res.status(200).json({ 'success': true, 'message': 'category fetched','categories':data });
-    }).catch(err => {
-        res.status(400).json({ 'success': false, 'message': err });
-    })
+  Category.findById(req.params.id).then(data => {
+    res.status(200).json({ 'success': true, 'message': 'category fetched', 'categories': data });
+  }).catch(err => {
+    res.status(400).json({ 'success': false, 'message': err });
+  })
 }
+
 

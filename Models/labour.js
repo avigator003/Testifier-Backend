@@ -6,6 +6,7 @@ const schemaOptions = {
 const Labour = new Schema({
     labour_name: String,
     labour_profile: String,
+    labour_photo_name: String,
     mobile_number: { type: Number, unique: true },
     state:String,
     city:String,
@@ -17,4 +18,4 @@ const Labour = new Schema({
 }, schemaOptions)
 
 
-module.exports = mongoose.model('UseLabourr', Labour)
+module.exports = mongoose.model('Labour', Labour)

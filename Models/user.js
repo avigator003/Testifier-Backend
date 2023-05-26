@@ -8,6 +8,7 @@ const schemaOptions = {
 const User = new Schema({
     user_name: String,
     user_profile: String,
+    user_photo_name: String,
     password: String,
     admin: { type: Boolean, default: false },
     user_type: String,

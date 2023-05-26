@@ -1,81 +1,78 @@
 const RawMaterial = require('../../../Models/rawmaterial')
+const { putPhoto, getPhoto, deletePhoto } = require('../../..');
 const multer = require('multer');
 
 // Set up multer storage engine
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-      cb(null, 'public/uploads/rawmaterial');
-    },
-    filename: (req, file, cb) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-        cb(null, file.fieldname + '-' + uniqueSuffix + '.' + file.originalname.split('.').pop());
-      }
-  });
-
-  // Initialize multer
-const upload = multer({ storage });
+const storage = multer.memoryStorage()
+const upload = multer({ storage: storage })
 
 
 exports.list = (req, res) => {
-    RawMaterial.find().then(data => {
-        res.status(200).json({ 'success': true, 'message': 'All raw material fetched', data});
-    }).catch(err => {
-        res.status(400).json({ 'success': false, 'message': err });
-    })
+  RawMaterial.find().then(data => {
+    res.status(200).json({ 'success': true, 'message': 'All raw material fetched', data });
+  }).catch(err => {
+    res.status(400).json({ 'success': false, 'message': err });
+  })
 
 }
 
 exports.deleteRawMaterial = (req, res) => {
-    RawMaterial.findByIdAndRemove(req.params.id).then(data => {
-        res.status(200).json({ 'success': true, 'message': 'raw material removed' });
-    }).catch(err => {
-        res.status(400).json({ 'success': false, 'message': err });
-    })
+  RawMaterial.findByIdAndRemove(req.params.id).then(data => {
+    deletePhoto(data.raw_material_photo_name)
+    res.status(200).json({ 'success': true, 'message': 'raw material removed' });
+  }).catch(err => {
+    res.status(400).json({ 'success': false, 'message': err });
+  })
 }
 
 // Create New Raw Material
 exports.createRawMaterial = (req, res) => {
-    const uploadMiddleware = upload.single('raw_material_photo');
-    uploadMiddleware(req, res, (err) => {
-      if (err) {
-        return res.status(400).json({ success: false, message: 'Error uploading file.' });
-      }
-      const rawMaterialData = { ...req.body };  
-      let filePath = null; 
-   
-      if (req.file) {
-       const fileName = req.file.filename;
-       const filePath = "public/uploads/rawmaterial/" + fileName;
-       rawMaterialData.raw_material_photo = filePath;
-     }
- 
-      RawMaterial.create({ ...rawMaterialData, raw_material_photo: filePath})
-        .then((data) => {
-          res.status(200).json({ success: true, message: 'Raw Material Created', data });
-        })
-        .catch((err) => {
-          console.log("akshat",err)
-      
-          res.status(400).json({ success: false, message: err });
-        });
-    });
-  };
+  upload.single('raw_material_photo')(req, res, async (err) => {
+    if (err) {
+      return res.status(400).json({ success: false, message: 'Error uploading file.', error: err });
+    }
+    const rawMaterialData = { ...req.body };
+    if (req.file) {
+      const fileName = req.file.originalname;
+      await putPhoto(fileName, req.file.buffer, req.file.mimetype)
+      const url = await getPhoto(fileName);
+      rawMaterialData.raw_material_photo = url;
+      rawMaterialData.raw_material_photo_name = fileName
+    }
+
+    RawMaterial.create({ ...rawMaterialData })
+      .then((data) => {
+        res.status(200).json({ success: true, message: 'Raw Material Created', data });
+      })
+      .catch((err) => {
+        console.log("akshat", err)
+
+        res.status(400).json({ success: false, message: err });
+      });
+  });
+};
 
 // Update Raw Material
 exports.updateRawMaterial = (req, res) => {
-  const uploadMiddleware = upload.single('raw_material_photo');
-  uploadMiddleware(req, res, (err) => {
+  upload.single('raw_material_photo')(req, res, async (err) => {
     if (err) {
-      return res.status(400).json({ success: false, message: 'Error uploading file.' });
+      return res.status(400).json({ success: false, message: 'Error uploading file.', error: err });
     }
-
-    const rawMaterialData = { ...req.body };  
+ 
+    const rawMaterialData = { ...req.body };
 
     // Check if a new file was uploaded
     if (req.file) {
-      const fileName = req.file.filename;
-      const filePath = "public/uploads/rawmaterial/" + fileName;
-      rawMaterialData.raw_material_photo = filePath;
+      await RawMaterial.findById(req.params.id).then(data => {
+        deletePhoto(data.raw_material_photo_name)
+      })
+
+      const fileName = req.file.originalname;
+      await putPhoto(fileName, req.file.buffer, req.file.mimetype)
+      const url = await getPhoto(fileName);
+      rawMaterialData.raw_material_photo = url;
+      rawMaterialData.raw_material_photo_name = fileName
+    
     }
 
     RawMaterial.findByIdAndUpdate(
@@ -93,20 +90,20 @@ exports.updateRawMaterial = (req, res) => {
 };
 
 exports.viewRawMaterial = (req, res) => {
-    RawMaterial.findById(req.params.id).then(data => {
-        res.status(200).json({ 'success': true, 'message': 'Raw Material fetched','rawmaterial':data });
-    }).catch(err => {
-        res.status(400).json({ 'success': false, 'message': err });
-    })
+  RawMaterial.findById(req.params.id).then(data => {
+    res.status(200).json({ 'success': true, 'message': 'Raw Material fetched', 'rawmaterial': data });
+  }).catch(err => {
+    res.status(400).json({ 'success': false, 'message': err });
+  })
 }
 
 exports.viewRawMaterialHistory = (req, res) => {
   RawMaterial.findById(req.params.id).then(data => {
-      const sortedHistory = data.history.sort((a, b) => b.created_at - a.created_at);
-      console.log("sortedistory",sortedHistory)
-      res.status(200).json({ 'success': true, 'message': 'Raw Material fetched','history':sortedHistory });
+    const sortedHistory = data.history.sort((a, b) => b.created_at - a.created_at);
+    console.log("sortedistory", sortedHistory)
+    res.status(200).json({ 'success': true, 'message': 'Raw Material fetched', 'history': sortedHistory });
   }).catch(err => {
-      res.status(400).json({ 'success': false, 'message': err });
+    res.status(400).json({ 'success': false, 'message': err });
   })
 }
 
@@ -126,8 +123,8 @@ exports.buyRawMaterial = (req, res) => {
       res.status(200).json({ 'success': true, 'message': 'Raw Material updated', 'rawmaterial': data });
     })
     .catch((err) => {
-      console.log("err",err)
- 
+      console.log("err", err)
+
       res.status(400).json({ 'success': false, 'message': err });
     });
 };

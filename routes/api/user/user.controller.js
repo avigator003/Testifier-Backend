@@ -6,23 +6,15 @@ const config = require("../../../config")
 const nodemailer = require("nodemailer")
 const crypto = require('crypto')
 const multer = require('multer');
-
+const { S3Client, PutObjectCommand } = require("@aws-sdk/client-s3");
+const { s3, bucketName, putPhoto, getPhoto, deletePhoto } = require('../../../index');
 // Set up multer storage engine
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, 'public/uploads/users');
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    cb(null, file.fieldname + '-' + uniqueSuffix + '.' + file.originalname.split('.').pop());
-  }
-});
-
-// Initialize multer
-const upload = multer({ storage });
+const storage = multer.memoryStorage()
+const upload = multer({ storage: storage })
 
 
 var sesTransport = require('nodemailer-ses-transport');
+
 
 var SESCREDENTIALS = {
   accessKeyId: "accesskey",
@@ -191,6 +183,7 @@ exports.verify = (req, res) => {
 
 exports.deleteUser = (req, res) => {
   User.findByIdAndRemove(req.params.id).then(data => {
+    deletePhoto(data.user_photo_name)
     res.status(200).json({ 'success': true, 'message': 'user removed' });
   }).catch(err => {
     res.status(400).json({ 'success': false, 'message': err });
@@ -199,21 +192,20 @@ exports.deleteUser = (req, res) => {
 
 
 exports.createUser = (req, res) => {
-  const uploadMiddleware = upload.single('user_profile');
-  uploadMiddleware(req, res, (err) => {
+  upload.single('user_profile')(req, res, async (err) => {
     if (err) {
-      return res.status(400).json({ success: false, message: 'Error uploading file.' });
+      return res.status(400).json({ success: false, message: 'Error uploading file.', error: err });
     }
     const userData = { ...req.body };
-     // Check if a new file was uploaded
-     let filePath = null; 
-     if (req.file) {
-      const fileName = req.file.filename;
-      filePath = "public/uploads/users/" + fileName;
-      userData.user_profile = filePath;
+    // Check if a new file was uploaded
+    if (req.file) {
+      const fileName = req.file.originalname;
+      await putPhoto(fileName, req.file.buffer, req.file.mimetype)
+      const url = await getPhoto(fileName);
+      userData.user_profile = url;
+      userData.user_photo_name = fileName
     }
 
-   
 
     // Check if mobile number already exists
     User.findOne({ mobile_number: userData.mobile_number }, (err, user) => {
@@ -224,7 +216,7 @@ exports.createUser = (req, res) => {
         return res.status(200).json({ success: false, message: `Mobile number already registered with ${user?.user_name}` });
       }
 
-      User.create({ ...userData, user_profile: filePath })
+      User.create({ ...userData })
         .then((data) => {
           res.status(200).json({ success: true, message: 'User Created Successfully', data });
         })
@@ -238,18 +230,24 @@ exports.createUser = (req, res) => {
 
 // Update user
 exports.updateUser = (req, res) => {
-  const uploadMiddleware = upload.single('user_profile');
-  uploadMiddleware(req, res, (err) => {
+  upload.single('user_profile')(req, res, async (err) => {
     if (err) {
-      return res.status(400).json({ success: false, message: 'Error uploading file.' });
+      return res.status(400).json({ success: false, message: 'Error uploading file.', error: err });
     }
-    const userData = { ...req.body };
+
+     const userData = { ...req.body };
 
     // Check if a new file was uploaded
     if (req.file) {
-      const fileName = req.file.filename;
-      const filePath = "public/uploads/users/" + fileName;
-      userData.user_profile = filePath;
+      await User.findById(req.params.id).then(data => {
+        deletePhoto(data.user_photo_name)
+      })
+
+      const fileName = req.file.originalname;
+      await putPhoto(fileName, req.file.buffer, req.file.mimetype)
+      const url = await getPhoto(fileName);
+      userData.user_profile = url;
+      userData.user_photo_name = fileName
     }
 
     // Check if mobile number already exists
@@ -270,7 +268,7 @@ exports.updateUser = (req, res) => {
           res.status(200).json({ success: true, message: 'User Updated Successfully', data });
         })
         .catch((err) => {
-          console.log("eerr1",err)
+          console.log("eerr1", err)
           res.status(400).json({ success: false, message: err });
         });
     });
@@ -289,7 +287,7 @@ exports.viewUser = (req, res) => {
 
 exports.loginByMobileNumber = (req, res) => {
   const mobileNumber = req.params.mobileNumber;
-  
+
   User.findOne({ mobile_number: mobileNumber }).then(data => {
     if (data) {
       res.status(200).json({ 'success': true, 'message': 'user fetched', 'data': data });

@@ -9,6 +9,7 @@ const RawMaterial = new Schema({
     raw_material_name:String,
     raw_material_description:String,
     raw_material_photo:String,
+    raw_material_photo_name:String,
     quantity_type:String,
     total_quantity:{type: Number , default :0 },
     history:[{ history_type: String, quantity:Number,created_at: { type: Date, default: Date.now } }],

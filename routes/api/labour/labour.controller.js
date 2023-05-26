@@ -1,19 +1,10 @@
+const { putPhoto, getPhoto, deletePhoto } = require('../../..');
 const Labour = require('../../../Models/labour')
 const multer = require('multer');
+const storage = multer.memoryStorage()
+const upload = multer({ storage: storage })
 
-// Set up multer storage engine
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-      cb(null, 'public/uploads/labour');
-    },
-    filename: (req, file, cb) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-        cb(null, file.fieldname + '-' + uniqueSuffix + '.' + file.originalname.split('.').pop());
-      }
-  });
 
-  // Initialize multer
-const upload = multer({ storage });
 
 
 exports.list = (req, res) => {
@@ -27,6 +18,7 @@ exports.list = (req, res) => {
 
 exports.deleteLabour = (req, res) => {
     Labour.findByIdAndRemove(req.params.id).then(data => {
+      deletePhoto(data.labour_photo_name)
         res.status(200).json({ 'success': true, 'message': 'Labour removed' });
     }).catch(err => {
         res.status(400).json({ 'success': false, 'message': err });
@@ -37,19 +29,19 @@ exports.deleteLabour = (req, res) => {
 
 // Create New Labour
 exports.createLabour = (req, res) => {
-    const uploadMiddleware = upload.single('labour_profile');
-    uploadMiddleware(req, res, (err) => {
-      if (err) {
-        return res.status(400).json({ success: false, message: 'Error uploading file.' });
-      }
-      const labourData = { ...req.body };
-      let filePath = null; 
+  upload.single('labour_profile')(req, res, async (err) => {
+    if (err) {
+      return res.status(400).json({ success: false, message: 'Error uploading file.', error: err });
+    }     
+    
+    const labourData = { ...req.body };
       if (req.file) {
-       const fileName = req.file.filename;
-       const filePath = "public/uploads/labour/" + fileName;
-       labourData.labour_profile = filePath;
+        fileName = req.file.originalname;
+        await putPhoto(fileName, req.file.buffer, req.file.mimetype)
+        const url = await getPhoto(fileName);
+        labourData.labour_profile = url;
+        labourData.labour_photo_name = fileName
      }
-
      
     // Check if mobile number already exists
     Labour.findOne({ mobile_number: labourData.mobile_number }, (err, labour) => {
@@ -60,7 +52,7 @@ exports.createLabour = (req, res) => {
         return res.status(200).json({ success: false, message: `Mobile number already registered with ${labour?.user_name}` });
       }
 
-      Labour.create({ ...labourData, labour_profile: filePath })
+      Labour.create({ ...labourData})
         .then((data) => {
           res.status(200).json({ success: true, message: 'Labour Created Successfully', data });
         })
@@ -74,19 +66,25 @@ exports.createLabour = (req, res) => {
 
 // Update labour
 exports.updateLabour = (req, res) => {
-  const uploadMiddleware = upload.single('labour_profile');
-  uploadMiddleware(req, res, (err) => {
+ 
+  upload.single('labour_profile')(req, res, async (err) => {
     if (err) {
-      return res.status(400).json({ success: false, message: 'Error uploading file.' });
+      return res.status(400).json({ success: false, message: 'Error uploading file.', error: err });
     }
-
+ 
     const labourData = { ...req.body };  
 
     // Check if a new file was uploaded
     if (req.file) {
-      const fileName = req.file.filename;
-      const filePath = "public/uploads/labour/" + fileName;
-      labourData.labour_profile = filePath;
+      await Labour.findById(req.params.id).then(data => {
+        deletePhoto(data.labour_photo_name)
+      })
+
+      const fileName = req.file.originalname;
+      await putPhoto(fileName, req.file.buffer, req.file.mimetype)
+      const url = await getPhoto(fileName);
+      labourData.labour_profile = url;
+      labourData.labour_photo_name = fileName
     }
 
      // Check if mobile number already exists

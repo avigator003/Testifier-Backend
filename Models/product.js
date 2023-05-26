@@ -5,6 +5,7 @@ const schemaOptions = {
 };
 const Product = new Schema({
   product_photo: String,
+  product_photo_name: String,
   product_name: String,
   product_description: String,
   product_category:{ type: Schema.Types.ObjectId, ref: "Category" },
