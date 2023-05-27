@@ -10,7 +10,6 @@ const product = require('./product')
 const category = require('./category')
 const order = require('./order')
 
-
 router.use('/auth', auth)
 router.use('/user', user)
 router.use('/admin', admin)
