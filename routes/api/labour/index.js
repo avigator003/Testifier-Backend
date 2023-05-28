@@ -1,7 +1,7 @@
 const router = require('express').Router()
 const controller = require('./labour.controller')
 
-router.get('/list', controller.list)
+router.get('/list/:month', controller.list)
 router.get('/delete/:id', controller.deleteLabour)
 router.post('/update/:id', controller.updateLabour)
 router.post('/salary/update', controller.updateSalaryHistory)

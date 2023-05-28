@@ -8,13 +8,43 @@ const upload = multer({ storage: storage })
 
 
 exports.list = (req, res) => {
-    Labour.find().then(data => {
-        res.status(200).json({ 'success': true, 'message': 'All Labour fetched', data});
-    }).catch(err => {
-        res.status(400).json({ 'success': false, 'message': err });
+  const { month } = req.params;
+  Labour.find({})
+    .populate({
+      path: 'salary_history',
+      match: { created_at: month },
+      select: 'created_at status advance_payment',
     })
+    .then((labours) => {
+      const salaryHistoryByUser = {};
+      labours.forEach((labour) => {
+        const salaryHistory = labour.salary_history.find((history) => history.created_at === month);
+        
+        const attendanceDays = labour.attendance_history.filter((attendance) => {
+          return attendance.created_at.getMonth() === new Date(month).getMonth();
+        }).length;
 
-}
+        const salaryPerDay = labour.salary / 30;
+        const payableAmount = salaryPerDay * attendanceDays;
+        const advancePayment = salaryHistory ? salaryHistory.advance_payment : 0;
+        const dueAmount = payableAmount - advancePayment;
+
+        salaryHistoryByUser[labour._id] = {
+          ...labour._doc,
+          advancePayment,
+          payableAmount,
+          dueAmount,
+        };
+      });
+
+      res.status(200).json({ success: true, message: `Labour fetched for month: ${month}`, data:  Object.values(salaryHistoryByUser) });
+    })
+    .catch((err) => {
+      console.log("err", err);
+      res.status(400).json({ success: false, message: err.message });
+    });
+};
+
 
 exports.deleteLabour = (req, res) => {
     Labour.findByIdAndRemove(req.params.id).then(data => {
@@ -308,27 +338,44 @@ exports.viewLabourByMobileNumber = (req, res) => {
       });
   };
 
-
-  
   exports.getSalaryHistoryByMonth = (req, res) => {
     const { month } = req.params;
     Labour.find({})
       .populate({
         path: 'salary_history',
-        match: { created_at: month },
-        select: 'created_at status',
+        match: { created_at: month, advance_payment_date: { $gte: month, $lt: month } },
+        select: 'created_at status advance_payment',
       })
       .then((labours) => {
         const salaryHistoryByUser = {};
         labours.forEach((labour) => {
           const salaryHistory = labour.salary_history.find((history) => history.created_at === month);
-          salaryHistoryByUser[labour._id] = salaryHistory ? salaryHistory : null;
+          
+          const attendanceDays = labour.attendance_history.filter((attendance) => {
+            return attendance.created_at.getMonth() === new Date(month).getMonth();
+          }).length;
+  
+          const salaryPerDay = labour.salary / 30;
+          const payableAmount = (salaryPerDay * attendanceDays).toFixed(2);
+          const advancePayment = salaryHistory ? salaryHistory.advance_payment : 0;
+          const dueAmount = (payableAmount - advancePayment).toFixed(2);
+  
+          salaryHistoryByUser[labour._id] = {
+            ...labour._doc,
+            advancePayment,
+            payableAmount,
+            dueAmount,
+          };
         });
-        res.status(200).json({ success: true, salaryHistoryByUser });
+
+        console.log("data",salaryHistoryByUser)
+  
+        res.status(200).json({ success: true, salaryHistoryByUser:Object.values(salaryHistoryByUser)});
       })
       .catch((err) => {
         console.log("err", err);
         res.status(400).json({ success: false, message: err.message });
       });
   };
+  
   
