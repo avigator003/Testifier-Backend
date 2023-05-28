@@ -6,10 +6,17 @@ const upload = multer({ storage: storage })
 
 
 
-
 exports.list = (req, res) => {
-  const { month } = req.params;
-  Labour.find({})
+  console.log("month",req.body)
+  const { month } = req.body;
+
+  const query = {};
+
+  if (month) {
+    query['salary_history.created_at'] = month;
+  }
+
+  Labour.find(query)
     .populate({
       path: 'salary_history',
       match: { created_at: month },
@@ -143,11 +150,47 @@ exports.updateLabour = (req, res) => {
 
 
 exports.viewLabour = (req, res) => {
-    Labour.findById(req.params.id).then(data => {
-        res.status(200).json({ 'success': true, 'message': 'Labour fetched','labour':data });
-    }).catch(err => {
-        res.status(400).json({ 'success': false, 'message': err });
+  const { month } = req.body;
+  const {id} = req.params
+  const query = {};
+
+  if (month) {
+    query['salary_history.created_at'] = month;
+  }
+
+  Labour.find(query)
+    .populate({
+      path: 'salary_history',
+      match: { created_at: month },
+      select: 'created_at status advance_payment',
     })
+    .then((labours) => {
+      const salaryHistoryByUser = {};
+      labours.forEach((labour) => {
+        const salaryHistory = labour.salary_history.find((history) => history.created_at === month);
+        
+        const attendanceDays = labour.attendance_history.filter((attendance) => {
+          return attendance.created_at.getMonth() === new Date(month).getMonth();
+        }).length;
+
+        const salaryPerDay = labour.salary / 30;
+        const payableAmount = salaryPerDay * attendanceDays;
+        const advancePayment = salaryHistory ? salaryHistory.advance_payment : 0;
+        const dueAmount = payableAmount - advancePayment;
+
+        salaryHistoryByUser[labour._id] = {
+          ...labour._doc,
+          advancePayment,
+          payableAmount,
+          dueAmount,
+        };
+      });
+      res.status(200).json({ success: true, message: `Labour fetched for month: ${month}`, labour:  salaryHistoryByUser[id]});
+    })
+    .catch((err) => {
+      console.log("err", err);
+      res.status(400).json({ success: false, message: err.message });
+    });
 }
 
 exports.viewLabourByMobileNumber = (req, res) => {
@@ -368,7 +411,6 @@ exports.viewLabourByMobileNumber = (req, res) => {
           };
         });
 
-        console.log("data",salaryHistoryByUser)
   
         res.status(200).json({ success: true, salaryHistoryByUser:Object.values(salaryHistoryByUser)});
       })
