@@ -113,14 +113,12 @@ app.listen(port, () => {
 mongoose.connect(config.mongodbUri,
     {useNewUrlParser: true, 
      useUnifiedTopology: true ,
-     useCreateIndex:true,
-     timezone: 'Asia/Kolkata' })
-     
-mongoose.Promise = global.Promise
-const db = mongoose.connection
-db.on('error', console.error)
-db.once('open', ()=>{
-    console.log('connected to mongodb server')
-})
+     useCreateIndex:true})
+     .then(() =>{
+        console.log('connected to mongodb server')
+     })
+     .catch((err)=>{
+        console.log("error",err)
+     })
 
 

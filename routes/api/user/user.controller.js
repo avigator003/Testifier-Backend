@@ -12,14 +12,7 @@ const { s3, bucketName, putPhoto, getPhoto, deletePhoto } = require('../../../in
 const storage = multer.memoryStorage()
 const upload = multer({ storage: storage })
 
-
 var sesTransport = require('nodemailer-ses-transport');
-
-
-var SESCREDENTIALS = {
-  accessKeyId: "accesskey",
-  secretAccessKey: "secretkey"
-};
 
 var transporter = nodemailer.createTransport(sesTransport({
   accessKeyId: process.env.accessKeyId,
@@ -42,18 +35,14 @@ exports.count = (req, res) => {
     res.status(400).json({ status: false, message: error })
   })
 }
-
-
 /* 
     GET /api/user/list
 */
-
-
 exports.list = (req, res) => {
   const { admin } = req.body
   var isAdminFilter = admin === undefined || null
   if (!isAdminFilter) {
-    User.find({ admin: false }, '-password').exec()
+   User.find({ admin: admin })
       .then(
         users => {
           res.json({ users })
@@ -61,7 +50,7 @@ exports.list = (req, res) => {
       )
   }
   else {
-    User.find({}, '-password').exec()
+    User.find()
       .then(
         users => {
           res.json({ users })
@@ -364,6 +353,7 @@ exports.dashboardDetails = (req, res) => {
       res.status(200).json({ 'success': true, 'data': dashboardData });
     })
     .catch(err => {
+      console.log("err",err)
       res.status(400).json({ 'success': false, 'message': err });
     });
 };

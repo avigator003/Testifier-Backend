@@ -7,9 +7,7 @@ const upload = multer({ storage: storage })
 
 
 exports.list = (req, res) => {
-  console.log("month",req.body)
   const { month } = req.body;
-
   const query = {};
 
   if (month) {
