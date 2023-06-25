@@ -366,26 +366,18 @@ exports.donwloadInvoice = async (req, res) => {
   var data = {
     "images": {
       // The logo on top of your invoice
-      "logo": "https://public.easyinvoice.cloud/img/logo_en_original.png",
+      "logo": "https://starbakery.s3.ap-northeast-1.amazonaws.com/logo_whitebg.png",
       // The invoice background
-      "background": "https://public.easyinvoice.cloud/img/watermark-draft.jpg"
     },
     // Your own data
     "sender": {
       "company": "Star Bakery",
-      "address": "Sample Street 123",
-      "zip": "1234 AB",
+      "address": "Opp. Kuskal Patiya, Nr.Banas Oil Mill,Palanpur Deesa Highway,At,Badarpura,Ta.Planpur, Dist. Banaskantha",
+      "zip": "385001",
       "city": "Ahemdabad",
       "country": "India"
     },
     // Your recipient
-    "client": {
-      "company": "Client Corp",
-      "address": "Clientstreet 456",
-      "zip": "4567 CD",
-      "city": "Ahemdabad",
-      "country": "India"
-    },
     "information": {
       // Invoice number
       "number": invoiceNumber,

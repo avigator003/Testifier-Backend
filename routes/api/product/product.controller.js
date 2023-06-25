@@ -105,12 +105,16 @@ exports.showAll = (req, res) => {
 //View Test By Id
 exports.viewProduct = (req, res) => {
   Product.findById(req.params.id)
-    .populate('product_category')
+    .populate({
+      path: 'prices.users',
+      model: 'User',
+      select: 'route_name' // Select the 'route_name' field from the User model
+    })
     .exec((err, data) => {
       if (err) {
-        res.status(400).json({ status: false, message: error })
+        res.status(400).json({ status: false, message: error });
         return;
       }
-      res.status(200).json({ status: true, message: "Product fetched", data })
+      res.status(200).json({ status: true, message: "Product fetched", data });
     });
-}
+};
