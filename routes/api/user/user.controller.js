@@ -166,9 +166,7 @@ exports.verify = (req, res) => {
   }).catch(err => {
     res.json({ 'success': false, 'message': err });
   })
-
 }
-
 
 exports.deleteUser = (req, res) => {
   User.findByIdAndRemove(req.params.id).then(data => {
@@ -183,6 +181,7 @@ exports.deleteUser = (req, res) => {
     }
     res.status(200).json({ 'success': true, 'message': 'user removed' });
   }).catch(err => {
+    console.log("Erro",err)
     res.status(400).json({ 'success': false, 'message': err });
   })
 }

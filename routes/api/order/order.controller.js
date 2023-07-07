@@ -283,6 +283,7 @@ exports.updatePaymentStatus = async (req, res) => {
 
 exports.viewOrder = (req, res) => {
   Order.findById(req.params.id)
+    .populate('user') 
     .populate('products.product', 'product_name price') // populate the 'product' field of the 'products' array with the specified fields
     .exec()
     .then(data => {

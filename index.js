@@ -30,14 +30,21 @@ const s3=new S3Client({
 });
 
 
-const deletePhoto = (photoName) => {
-    const getDeleteParama = {
-      Bucket: bucketName,
-      Key: photoName,
-    };
-     const deleteCommand = new DeleteObjectCommand(getDeleteParama);
-     s3.send(deleteCommand);
-  }
+const deletePhoto = async (photoName) => {
+    try {
+      const getDeleteParams = {
+        Bucket: bucketName,
+        Key: photoName,
+      };
+  
+      const deleteCommand = new DeleteObjectCommand(getDeleteParams);
+      await s3.send(deleteCommand);
+      console.log(`Successfully deleted photo: ${photoName}`);
+    } catch (error) {
+      console.error(`Error deleting photo: ${photoName}`, error);
+      // Handle the error as needed
+    }
+  };
 
   const getPhoto =  async (photoName) => {
     const getObjectParams = {
