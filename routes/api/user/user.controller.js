@@ -42,7 +42,7 @@ exports.list = (req, res) => {
   const { admin } = req.body
   var isAdminFilter = admin === undefined || null
   if (!isAdminFilter) {
-   User.find({ admin: admin })
+    User.find({ admin: admin })
       .then(
         users => {
           res.json({ users })
@@ -172,29 +172,61 @@ exports.verify = (req, res) => {
 
 exports.deleteUser = (req, res) => {
   User.findByIdAndRemove(req.params.id).then(data => {
-    deletePhoto(data.user_photo_name)
+    if (data?.user_photo_name !== undefined) {
+      deletePhoto(data?.user_photo_name)
+    }
+    if (data?.adhar_front_name !== undefined) {
+      deletePhoto(data?.adhar_front_name)
+    }
+    if (data?.adhar_back_name !== undefined) {
+      deletePhoto(data?.adhar_back_name)
+    }
     res.status(200).json({ 'success': true, 'message': 'user removed' });
   }).catch(err => {
     res.status(400).json({ 'success': false, 'message': err });
   })
 }
 
-
 exports.createUser = (req, res) => {
-  upload.single('user_profile')(req, res, async (err) => {
+  upload.fields([
+    { name: 'user_profile', maxCount: 1 },
+    { name: 'adhar_front', maxCount: 1 },
+    { name: 'adhar_back', maxCount: 1 },
+  ])(req, res, async (err) => {
     if (err) {
       return res.status(400).json({ success: false, message: 'Error uploading file.', error: err });
     }
     const userData = { ...req.body };
-    // Check if a new file was uploaded
-    if (req.file) {
-      const fileName = req.file.originalname;
-      await putPhoto(fileName, req.file.buffer, req.file.mimetype)
+
+    // Check if a new user_profile file was uploaded
+    if (req.files['user_profile']) {
+      const userPhotoFile = req.files['user_profile'][0];
+      const fileName = userPhotoFile.originalname;
+      await putPhoto(fileName, userPhotoFile.buffer, userPhotoFile.mimetype);
       const url = await getPhoto(fileName);
       userData.user_profile = url;
-      userData.user_photo_name = fileName
+      userData.user_photo_name = fileName;
     }
 
+    // Check if a new adhar_front file was uploaded
+    if (req.files['adhar_front']) {
+      const adharFrontFile = req.files['adhar_front'][0];
+      const fileName = adharFrontFile.originalname;
+      await putPhoto(fileName, adharFrontFile.buffer, adharFrontFile.mimetype);
+      const url = await getPhoto(fileName);
+      userData.adhar_front = url;
+      userData.adhar_front_name = fileName;
+    }
+
+    // Check if a new adhar_back file was uploaded
+    if (req.files['adhar_back']) {
+      const adharBackFile = req.files['adhar_back'][0];
+      const fileName = adharBackFile.originalname;
+      await putPhoto(fileName, adharBackFile.buffer, adharBackFile.mimetype);
+      const url = await getPhoto(fileName);
+      userData.adhar_back = url;
+      userData.adhar_back_name = fileName;
+    }
 
     // Check if mobile number already exists
     User.findOne({ mobile_number: userData.mobile_number }, (err, user) => {
@@ -217,26 +249,58 @@ exports.createUser = (req, res) => {
 };
 
 
-// Update user
 exports.updateUser = (req, res) => {
-  upload.single('user_profile')(req, res, async (err) => {
+  upload.fields([
+    { name: 'user_profile', maxCount: 1 },
+    { name: 'adhar_front', maxCount: 1 },
+    { name: 'adhar_back', maxCount: 1 },
+  ])(req, res, async (err) => {
     if (err) {
       return res.status(400).json({ success: false, message: 'Error uploading file.', error: err });
     }
 
-     const userData = { ...req.body };
+    const userData = { ...req.body };
 
-    // Check if a new file was uploaded
-    if (req.file) {
+    // Check if a new user_profile file was uploaded
+    if (req.files['user_profile']) {
       await User.findById(req.params.id).then(data => {
-        deletePhoto(data.user_photo_name)
-      })
+        deletePhoto(data.user_photo_name);
+      });
 
-      const fileName = req.file.originalname;
-      await putPhoto(fileName, req.file.buffer, req.file.mimetype)
+      const userPhotoFile = req.files['user_profile'][0];
+      const fileName = userPhotoFile.originalname;
+      await putPhoto(fileName, userPhotoFile.buffer, userPhotoFile.mimetype);
       const url = await getPhoto(fileName);
       userData.user_profile = url;
-      userData.user_photo_name = fileName
+      userData.user_photo_name = fileName;
+    }
+
+    // Check if a new adhar_front file was uploaded
+    if (req.files['adhar_front']) {
+      await User.findById(req.params.id).then(data => {
+        deletePhoto(data.adhar_front_name);
+      });
+
+      const adharFrontFile = req.files['adhar_front'][0];
+      const fileName = adharFrontFile.originalname;
+      await putPhoto(fileName, adharFrontFile.buffer, adharFrontFile.mimetype);
+      const url = await getPhoto(fileName);
+      userData.adhar_front = url;
+      userData.adhar_front_name = fileName;
+    }
+
+    // Check if a new adhar_back file was uploaded
+    if (req.files['adhar_back']) {
+      await User.findById(req.params.id).then(data => {
+        deletePhoto(data.adhar_back_name);
+      });
+
+      const adharBackFile = req.files['adhar_back'][0];
+      const fileName = adharBackFile.originalname;
+      await putPhoto(fileName, adharBackFile.buffer, adharBackFile.mimetype);
+      const url = await getPhoto(fileName);
+      userData.adhar_back = url;
+      userData.adhar_back_name = fileName;
     }
 
     // Check if mobile number already exists
@@ -353,7 +417,7 @@ exports.dashboardDetails = (req, res) => {
       res.status(200).json({ 'success': true, 'data': dashboardData });
     })
     .catch(err => {
-      console.log("err",err)
+      console.log("err", err)
       res.status(400).json({ 'success': false, 'message': err });
     });
 };

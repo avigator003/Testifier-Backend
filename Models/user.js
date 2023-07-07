@@ -8,6 +8,11 @@ const schemaOptions = {
 const User = new Schema({
     user_name: String,
     user_profile: String,
+    adhar_number: String,
+    adhar_front: String,
+    adhar_front_name: String,
+    adhar_back: String,
+    adhar_back_name: String,
     user_photo_name: String,
     password: String,
     admin: { type: Boolean, default: false },

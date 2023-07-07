@@ -352,7 +352,7 @@ exports.donwloadInvoice = async (req, res) => {
         });
         const price = priceForUser.price;
         const quantity = productObj.quantity;
-        const taxRate = 18;
+        const taxRate = 0;
 
         return { quantity, description, "tax-rate": taxRate, price };
       });
