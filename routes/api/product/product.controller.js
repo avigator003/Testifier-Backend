@@ -83,20 +83,23 @@ exports.updateProduct = (req, res) => {
 
 exports.showAll = (req, res) => {
   const { categoryId } = req.body;
+  console.log("cateogry",categoryId)
   let query = {};
 
   if (categoryId) {
     query.product_category = categoryId;
   }
 
+  console.log("cateogry",query)
   Product.find(query)
+  .populate('product_category')
     .populate('prices.users')
-    .populate('product_category')
     .exec((err, data) => {
       if (err) {
         res.status(400).json({ status: false, message: err })
         return;
       }
+      console.log("hey",data.length)
       res.status(200).json({ status: true, message: "Product list fetched", data })
     });
 }
@@ -110,6 +113,7 @@ exports.viewProduct = (req, res) => {
       model: 'User',
       select: 'route_name' // Select the 'route_name' field from the User model
     })
+    .populate('product_category')
     .exec((err, data) => {
       if (err) {
         res.status(400).json({ status: false, message: error });
