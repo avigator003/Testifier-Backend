@@ -16,6 +16,7 @@ const OrderSchema = new Schema({
   status: { type: String, default: 'Pending' },
   invoiceNumber: { type: Number },
   user: { type: Schema.Types.ObjectId, ref: 'User' },
+  orderCreatedUserId: { type: Schema.Types.ObjectId, ref: 'User' },
   paymentStatus: { type: String, default: 'Unpaid' },
   totalPrice: { type: Number, default: 0 },
   previousOrderDueAmount :{type :Number ,default :0 },

@@ -31,7 +31,7 @@ exports.deletOrder = (req, res) => {
 
 exports.createOrder = async (req, res) => {
   try {
-    const { products, userId } = req.body;
+    const { products,userId,orderCreatedUserId} = req.body;
     const currentDate = new Date()
     const productPromises = products.map((p) =>
       Product.findById(p.product)
@@ -47,18 +47,17 @@ exports.createOrder = async (req, res) => {
     for (let i = 0; i < productsData.length; i++) {
       const { quantity } = products[i];
       const priceForUser = productsData[i].prices.find((price) => {
-        return price.users.some((user) => user.toString() === userId);
+        return price.users.some((user) => user.toString() === orderCreatedUserId);
       });
 
       if (!priceForUser) {
         const productName = productsData[i]?.product_name;
-        const userName = await User.findById(userId).select('user_name').exec();
+        const userName = await User.findById(orderCreatedUserId).select('user_name').exec();
         return res.status(200).json({
           success: false,
           message: `The price for product ${productName} is not associated with user ${userName.user_name}.`
         });
       }
-
       totalPrice += priceForUser?.price * quantity;
     }
 
@@ -70,7 +69,7 @@ exports.createOrder = async (req, res) => {
     }));
 
     // Find all unpaid orders for the user and calculate the total due amount
-    const previousOrders = await Order.find({ user: userId }).sort('-createdAt');
+    const previousOrders = await Order.find({ orderCreatedUserId: orderCreatedUserId }).sort('-createdAt');
     const uncompletedOrders = previousOrders.filter(order => order.status !== 'Completed');
     if (uncompletedOrders.length > 0) {
       return res.status(200).json({
@@ -79,7 +78,6 @@ exports.createOrder = async (req, res) => {
       });
     }
     
-    const previousDueAmount = previousOrders.length ? previousOrders[previousOrders.length-1].duePayment : 0;
 
     // Calculate the previousOrderDueAmount and totalAmount
     const previousOrderDueAmount = previousOrders.length ? previousOrders[previousOrders.length-1].duePayment : 0;
@@ -91,6 +89,7 @@ exports.createOrder = async (req, res) => {
       invoiceNumber,
       totalPrice,
       user: userId,
+      orderCreatedUserId:orderCreatedUserId,
       orderDate: currentDate,
       previousOrderDueAmount, // Set the previousOrderDueAmount
       totalAmount, // Set the totalAmount
@@ -109,11 +108,11 @@ exports.createOrder = async (req, res) => {
 
 exports.updateOrder = async (req, res) => {
   try {
-    const { products, userId } = req.body;
+    const { products ,orderCreatedUserId} = req.body;
     const currentDate = new Date();
 
     // Get the order data from the database
-    const order = await Order.findById(req.params.id)
+    const order = await Order.findById(req.params.rowId)
       .populate({
         path: 'products.product',
         populate: {
@@ -123,9 +122,11 @@ exports.updateOrder = async (req, res) => {
       })
       .exec();
 
+
     // Update the quantities of the products in the order
     for (let i = 0; i < products.length; i++) {
       const { product: productId, quantity } = products[i];
+
       const productIndex = order.products.findIndex(
         (p) => p.product._id.toString() === productId.toString()
       );
@@ -159,16 +160,21 @@ exports.updateOrder = async (req, res) => {
     let totalPrice = 0;
     for (let i = 0; i < order.products.length; i++) {
       const { product, quantity } = order.products[i];
+    
       const priceForUser = product.prices.find((price) => {
-        return price.users.some((user) => user.toString() === userId);
+        return price.users.some((user) => user.toString() === orderCreatedUserId);
       });
       if (priceForUser && priceForUser.price) {
         totalPrice += priceForUser.price * quantity;
       }
     }
 
+
+
     // Update the order data and save it to the database
     order.totalPrice = totalPrice || 0;
+    order.totalAmount = (order.previousOrderDueAmount + totalPrice) || 0;
+    order.duePayment = (order.totalAmount - order.paidAmount) || 0;
     order.orderDate = currentDate;
     const updatedOrder = await order.save();
     res.status(200).json({ success: true, message: 'Order Updated', data: updatedOrder });
@@ -219,8 +225,6 @@ exports.updatePaymentStatus = async (req, res) => {
       throw new Error('Order not found');
     }
 
-    const userId=order.user;
-
     const orders = await Order.find({
       user: order.user,
       paymentStatus: { $ne: 'Cancelled' }
@@ -264,9 +268,6 @@ exports.updatePaymentStatus = async (req, res) => {
       }
     }
 
-
-
-
     res.status(200).json({
       success: true,
       order
@@ -284,6 +285,7 @@ exports.updatePaymentStatus = async (req, res) => {
 exports.viewOrder = (req, res) => {
   Order.findById(req.params.id)
     .populate('user') 
+    .populate('orderCreatedUserId')
     .populate('products.product', 'product_name price') // populate the 'product' field of the 'products' array with the specified fields
     .exec()
     .then(data => {
@@ -294,8 +296,8 @@ exports.viewOrder = (req, res) => {
 }
 
 exports.viewOrderByDateOrUser = (req, res) => {
-  const { startDate, endDate, userId } = req.body;
-  const user = userId;
+  const { startDate, endDate,orderCreatedUserId} = req.body;
+  const user = orderCreatedUserId;
 
   let query = {};
   if (startDate && endDate && user) {
@@ -304,7 +306,7 @@ exports.viewOrderByDateOrUser = (req, res) => {
         $gte: new Date(startDate),
         $lt: new Date(endDate + 'T23:59:59.999Z')
       },
-      user: user
+      orderCreatedUserId: user
     };
   } else if (startDate && endDate) {
     query = {
@@ -314,12 +316,13 @@ exports.viewOrderByDateOrUser = (req, res) => {
       }
     };
   } else if (user) {
-    query = { user: user };
+    query = { orderCreatedUserId: user };
   }
 
   Order.find(query)
     .populate('products.product')
     .populate('user')
+    .populate('orderCreatedUserId')
     .then(data => {
       res.status(200).json({ 'success': true, 'message': 'orders fetched', 'orders': data });
     })

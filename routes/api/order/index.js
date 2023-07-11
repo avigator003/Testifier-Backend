@@ -3,7 +3,7 @@ const controller = require('./order.controller')
 
 router.get('/list', controller.list)
 router.get('/delete/:id', controller.deletOrder)
-router.post('/update/:id', controller.updateOrder)
+router.post('/update/:rowId', controller.updateOrder)
 router.post('/update_order_status/:id', controller.updateOrderStatus)
 router.post('/update_payment_status/:id', controller.updatePaymentStatus)
 router.post('/create', controller.createOrder)
