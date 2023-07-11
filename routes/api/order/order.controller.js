@@ -346,7 +346,7 @@ exports.donwloadInvoice = async (req, res) => {
     .populate("user")
     .then(order => {
       invoiceNumber = order?.invoiceNumber;
-      const userId = order.user._id
+      const userId = order.orderCreatedUserId._id
       const products = order.products.map(productObj => {
         const product = productObj.product;
         const description = product.product_name;
