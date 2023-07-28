@@ -267,6 +267,16 @@ exports.updatePaymentStatus = async (req, res) => {
         await userOrder.save();
       }
     }
+    else if (paymentStatus === 'Unpaid') {
+      const userOrders = await Order.find({ user: order.user }).exec();
+      for (let i = 0; i < userOrders.length; i++) {
+        const userOrder = userOrders[i];
+        userOrder.paidAmount = 0;
+        userOrder.duePayment = userOrder.totalAmount;
+        userOrder.paymentStatus="Unpaid"
+        await userOrder.save();
+      }
+    }
 
     res.status(200).json({
       success: true,
@@ -296,7 +306,9 @@ exports.viewOrder = (req, res) => {
 }
 
 exports.viewOrderByDateOrUser = (req, res) => {
-  const { startDate, endDate,orderCreatedUserId} = req.body;
+  const { startDate, endDate, orderCreatedUserId} = req.body;
+  console.log("user",orderCreatedUserId)
+
   const user = orderCreatedUserId;
 
   let query = {};
@@ -415,7 +427,6 @@ exports.donwloadInvoice = async (req, res) => {
     console.error('Error uploading PDF:', error);
   }
      const filePath=await getPhoto(orderPdfName);
-     console.log("fielPath",filePath);
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="${filePath}"`);
     res.status(200);
