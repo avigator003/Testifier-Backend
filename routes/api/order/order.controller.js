@@ -33,6 +33,11 @@ exports.createOrder = async (req, res) => {
   try {
     const { products,userId,orderCreatedUserId} = req.body;
     const currentDate = new Date()
+    const timeZoneOffsetMinutes = 330; // 5 hours * 60 minutes + 30 minutes
+
+    // Calculate the local date and time
+    const currentDateTimeLocal = new Date(currentDate.getTime() + timeZoneOffsetMinutes * 60000);
+
     const productPromises = products.map((p) =>
       Product.findById(p.product)
         .populate('product_category')
@@ -90,7 +95,7 @@ exports.createOrder = async (req, res) => {
       totalPrice,
       user: userId,
       orderCreatedUserId:orderCreatedUserId,
-      orderDate: currentDate,
+      orderDate: currentDateTimeLocal,
       previousOrderDueAmount, // Set the previousOrderDueAmount
       totalAmount, // Set the totalAmount
       duePayment: totalAmount, // Set the duePayment to the totalAmount
@@ -206,6 +211,7 @@ exports.updateOrderStatus = (req, res) => {
       date.setMinutes(59);
       date.setSeconds(59);
       date.setMilliseconds(999);
+
       return order.save();
     })
     .then((data) => {
@@ -307,7 +313,7 @@ exports.viewOrder = (req, res) => {
 
 exports.viewOrderByDateOrUser = (req, res) => {
   const { startDate, endDate, orderCreatedUserId} = req.body;
-  console.log("user",orderCreatedUserId)
+  console.log("user",startDate,endDate)
 
   const user = orderCreatedUserId;
 
