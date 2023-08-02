@@ -313,7 +313,6 @@ exports.viewOrder = (req, res) => {
 
 exports.viewOrderByDateOrUser = (req, res) => {
   const { startDate, endDate, orderCreatedUserId} = req.body;
-  console.log("user",startDate,endDate)
 
   const user = orderCreatedUserId;
 
@@ -341,6 +340,7 @@ exports.viewOrderByDateOrUser = (req, res) => {
     .populate('products.product')
     .populate('user')
     .populate('orderCreatedUserId')
+    .sort({ orderDate: -1 })
     .then(data => {
       res.status(200).json({ 'success': true, 'message': 'orders fetched', 'orders': data });
     })
