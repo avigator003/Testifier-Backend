@@ -353,6 +353,7 @@ exports.viewOrderByDateOrUser = (req, res) => {
 exports.donwloadInvoice = async (req, res) => {
   var orderId = req.params.id;
   var invoiceNumber = 0;
+  var routeName="";
   const productsList = await Order.findById(orderId)
     .populate({
       path: 'products.product',
@@ -362,9 +363,12 @@ exports.donwloadInvoice = async (req, res) => {
       },
     })
     .populate("user")
+    .populate("orderCreatedUserId")
     .then(order => {
       invoiceNumber = order?.invoiceNumber;
-      const userId = order.orderCreatedUserId._id
+      const userId = order.orderCreatedUserId._id;
+
+      routeName=order.orderCreatedUserId.route_name;
       const products = order.products.map(productObj => {
         const product = productObj.product;
         const description = product.product_name;
@@ -391,6 +395,8 @@ exports.donwloadInvoice = async (req, res) => {
       "logo": "https://starbakery.s3.ap-northeast-1.amazonaws.com/logo_whitebg.png",
       // The invoice background
     },
+    "marginBottom": 5,
+    "marginTop": 5,
     // Your own data
     "sender": {
       "company": "Star Bakery",
@@ -399,6 +405,9 @@ exports.donwloadInvoice = async (req, res) => {
       "city": "Ahemdabad",
       "country": "India"
     },
+    "client": {
+      "company": routeName
+  },
     // Your recipient
     "information": {
       // Invoice number
@@ -411,7 +420,9 @@ exports.donwloadInvoice = async (req, res) => {
     "bottom-notice": "Kindly pay your invoice within 15 days.",
     // Settings to customize your invoice
     "settings": {
-      "currency": "INR"
+      "currency": "INR",
+      "marginBottom": 5,
+      "marginTop": 5,
     },
   };
 
