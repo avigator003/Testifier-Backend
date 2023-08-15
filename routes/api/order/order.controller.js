@@ -114,8 +114,7 @@ exports.createOrder = async (req, res) => {
 exports.updateOrder = async (req, res) => {
   try {
     const { products ,orderCreatedUserId} = req.body;
-    const currentDate = new Date();
-
+   
     // Get the order data from the database
     const order = await Order.findById(req.params.rowId)
       .populate({
@@ -180,7 +179,6 @@ exports.updateOrder = async (req, res) => {
     order.totalPrice = totalPrice || 0;
     order.totalAmount = (order.previousOrderDueAmount + totalPrice) || 0;
     order.duePayment = (order.totalAmount - order.paidAmount) || 0;
-    order.orderDate = currentDate;
     const updatedOrder = await order.save();
     res.status(200).json({ success: true, message: 'Order Updated', data: updatedOrder });
   } catch (error) {
