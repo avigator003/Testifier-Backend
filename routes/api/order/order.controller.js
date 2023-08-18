@@ -6,6 +6,8 @@ const fs = require('fs')
 const Product = require('../../../Models/product');
 const { bucketName, s3, getPhoto } = require('../../..');
 const { PutObjectCommand, S3, S3Client, GetObjectCommand } = require('@aws-sdk/client-s3');
+const puppeteer = require('puppeteer');
+const ejs = require('ejs');
 
 exports.list = (req, res) => {
   Order.find().populate({
@@ -348,6 +350,126 @@ exports.viewOrderByDateOrUser = (req, res) => {
 }
 
 
+// exports.donwloadInvoice = async (req, res) => {
+//   var orderId = req.params.id;
+//   var invoiceNumber = 0;
+//   var routeName="";
+//   const productsList = await Order.findById(orderId)
+//     .populate({
+//       path: 'products.product',
+//       populate: {
+//         path: 'product_category',
+//         model: 'Category',
+//       },
+//     })
+//     .populate("user")
+//     .populate("orderCreatedUserId")
+//     .then(order => {
+//       invoiceNumber = order?.invoiceNumber;
+//       const userId = order.orderCreatedUserId._id;
+
+//       routeName=order.orderCreatedUserId.route_name;
+//       const products = order.products.map(productObj => {
+//         const product = productObj.product;
+//         const description = product.product_name;
+//         const priceForUser = product.prices?.find(price => {
+//           return price.users.some(user => JSON.stringify(user) === JSON.stringify(userId)
+//           );
+//         });
+//         const price = priceForUser.price;
+//         const quantity = productObj.quantity;
+//         const taxRate = 0;
+
+//         return { quantity, description, "tax-rate": taxRate, price };
+//       });
+//       return products;
+//     })
+//     .catch(error => {
+//       console.error(error);
+//     });
+//   const currentDate = new Date();
+//   const formattedDate = currentDate.toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' });
+//   const htmlFilePath = './white_invoice.html'; // Replace with the actual file path
+//   const htmlContent = fs.readFileSync(htmlFilePath, 'utf-8');
+
+// // Encode the HTML content to base64
+
+//   var data = {
+//      "customize": {
+//         // btoa === base64 encode
+//         "template": btoa(htmlContent) // Your template must be base64 encoded
+//     },
+//     "images": {
+//       // The logo on top of your invoice
+//       "logo": "https://starbakery.s3.ap-northeast-1.amazonaws.com/logo_whitebg.png",
+//       // The invoice background
+//     },
+//     "marginBottom": 5,
+//     "marginTop": 5,
+//     // Your own data
+//     "sender": {
+//       "company": "Star Bakery",
+//       "address": "Opp. Kuskal Patiya, Nr.Banas Oil Mill,Palanpur Deesa Highway,At,Badarpura,Ta.Planpur, Dist. Banaskantha",
+//       "zip": "385001",
+//       "city": "Ahemdabad",
+//       "country": "India"
+//     },
+//     "client": {
+//       "company": routeName
+//   },
+//     // Your recipient
+//     "information": {
+//       // Invoice number
+//       "number": invoiceNumber,
+//       // Invoice data
+//       "date": formattedDate,
+//     },
+//     "products": productsList,
+//     // The message you would like to display on the bottom of your invoice
+//     "bottom-notice": "Kindly pay your invoice within 15 days.",
+//     // Settings to customize your invoice
+//     "settings": {
+//       "currency": "INR",
+//       "marginBottom": 5,
+//       "marginTop": 5,
+//     },
+//   };
+
+//   const pdfBufferObject = await easyinvoice.createInvoice(data);
+//   const pdfBuffer = Buffer.from(pdfBufferObject.pdf, 'base64');
+ 
+//   var orderPdfName = `order-${orderId}.pdf`
+//   const uploadParams = {
+//     Bucket: bucketName,
+//     Key: orderPdfName,
+//     Body: pdfBuffer,
+//     ContentEncoding: "base64", // required
+//     ContentType: 'application/pdf',
+//   };
+//   try {
+//     const command=new PutObjectCommand(uploadParams)
+//     const response = await s3.send(command);
+//   } catch (error) {
+//     console.error('Error uploading PDF:', error);
+//   }
+//      const filePath=await getPhoto(orderPdfName);
+//     res.setHeader('Content-Type', 'application/pdf');
+//     res.setHeader('Content-Disposition', `attachment; filename="${filePath}"`);
+//     res.status(200);
+    
+//     const getObjectParams = {
+//       Bucket: bucketName,
+//       Key: orderPdfName,
+//     };
+
+//     const getCommand = new GetObjectCommand(getObjectParams);
+//     const response = await s3.send(getCommand);
+//     response.Body.pipe(res);
+// }
+
+
+
+
 exports.donwloadInvoice = async (req, res) => {
   var orderId = req.params.id;
   var invoiceNumber = 0;
@@ -387,47 +509,25 @@ exports.donwloadInvoice = async (req, res) => {
     });
   const currentDate = new Date();
   const formattedDate = currentDate.toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' });
-  var data = {
-    "images": {
-      // The logo on top of your invoice
-      "logo": "https://starbakery.s3.ap-northeast-1.amazonaws.com/logo_whitebg.png",
-      // The invoice background
-    },
-    "marginBottom": 5,
-    "marginTop": 5,
-    // Your own data
-    "sender": {
-      "company": "Star Bakery",
-      "address": "Opp. Kuskal Patiya, Nr.Banas Oil Mill,Palanpur Deesa Highway,At,Badarpura,Ta.Planpur, Dist. Banaskantha",
-      "zip": "385001",
-      "city": "Ahemdabad",
-      "country": "India"
-    },
-    "client": {
-      "company": routeName
-  },
-    // Your recipient
-    "information": {
-      // Invoice number
-      "number": invoiceNumber,
-      // Invoice data
-      "date": formattedDate,
-    },
-    "products": productsList,
-    // The message you would like to display on the bottom of your invoice
-    "bottom-notice": "Kindly pay your invoice within 15 days.",
-    // Settings to customize your invoice
-    "settings": {
-      "currency": "INR",
-      "marginBottom": 5,
-      "marginTop": 5,
-    },
-  };
+  const htmlFilePath = './white_invoice.html'; // Replace with the actual file path
+  const htmlContent = fs.readFileSync(htmlFilePath, 'utf-8');
 
-  const pdfBufferObject = await easyinvoice.createInvoice(data);
-  const pdfBuffer = Buffer.from(pdfBufferObject.pdf, 'base64');
- 
+// Encode the HTML content to base64
+
+const dynamicData = {
+  invoiceNumber: `Invoice :- ${invoiceNumber}`,
+  routeName:`Route Name :- ${routeName}`,
+  date:`Date :- ${formattedDate}`,
+  products:JSON.stringify(productsList)
+  // Add more dynamic data here
+};
+
+  // Render the EJS template with dynamic data
+  const renderedHtml = ejs.render(htmlContent, dynamicData);
+  const pdfBuffer = await generatePDF(renderedHtml);
   var orderPdfName = `order-${orderId}.pdf`
+
+
   const uploadParams = {
     Bucket: bucketName,
     Key: orderPdfName,
@@ -445,6 +545,8 @@ exports.donwloadInvoice = async (req, res) => {
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="${filePath}"`);
     res.status(200);
+    res.send(pdfBuffer);
+
     
     const getObjectParams = {
       Bucket: bucketName,
@@ -453,7 +555,25 @@ exports.donwloadInvoice = async (req, res) => {
 
     const getCommand = new GetObjectCommand(getObjectParams);
     const response = await s3.send(getCommand);
-    response.Body.pipe(res);
+    // response.Body.pipe(res);
+}
+
+function fillTemplate(template, data) {
+  let filledTemplate = template;
+  for (const key in data) {
+      filledTemplate = filledTemplate.replace(new RegExp(`{{${key}}}`, 'g'), data[key]);
+  }
+  return filledTemplate;
+}
+
+// Generate PDF from HTML content
+async function generatePDF(htmlContent) {
+  const browser = await puppeteer.launch();
+  const page = await browser.newPage();
+  await page.setContent(htmlContent);
+  const pdfBuffer = await page.pdf({ format: 'A4' });
+  await browser.close();
+  return pdfBuffer;
 }
 
 
