@@ -6,8 +6,8 @@ const fs = require('fs')
 const Product = require('../../../Models/product');
 const { bucketName, s3, getPhoto } = require('../../..');
 const { PutObjectCommand, S3, S3Client, GetObjectCommand } = require('@aws-sdk/client-s3');
-const puppeteer = require('puppeteer');
 const ejs = require('ejs');
+
 
 exports.list = (req, res) => {
   Order.find().populate({
@@ -558,23 +558,16 @@ const dynamicData = {
     // response.Body.pipe(res);
 }
 
-function fillTemplate(template, data) {
-  let filledTemplate = template;
-  for (const key in data) {
-      filledTemplate = filledTemplate.replace(new RegExp(`{{${key}}}`, 'g'), data[key]);
-  }
-  return filledTemplate;
-}
-
-// Generate PDF from HTML content
 async function generatePDF(htmlContent) {
-  const browser = await puppeteer.launch();
+  const browser = await puppeteer.launch({ headless: "new" });
   const page = await browser.newPage();
   await page.setContent(htmlContent);
   const pdfBuffer = await page.pdf({ format: 'A4' });
   await browser.close();
   return pdfBuffer;
 }
+
+
 
 
 
