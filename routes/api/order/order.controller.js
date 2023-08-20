@@ -7,6 +7,7 @@ const Product = require('../../../Models/product');
 const { bucketName, s3, getPhoto } = require('../../..');
 const { PutObjectCommand, S3, S3Client, GetObjectCommand } = require('@aws-sdk/client-s3');
 const puppeteer = require('puppeteer');
+const ejs = require('ejs');
 
 exports.list = (req, res) => {
   Order.find().populate({
@@ -565,8 +566,6 @@ async function generatePDF(htmlContent) {
   await browser.close();
   return pdfBuffer;
 }
-
-
 
 
 
