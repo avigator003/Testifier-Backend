@@ -1,14 +1,80 @@
 const Stock = require('../../../Models/stock')
+const Order = require('../../../Models/order');
+const { query } = require('express');
 
+// exports.list = (req, res) => {
+//     Stock.find().populate('product').then(data => {
+//         res.status(200).json({ 'success': true, 'message': 'All stock fetched', data});
+//     }).catch(err => {
+//         res.status(400).json({ 'success': false, 'message': err });
+//     })
 
-exports.list = (req, res) => {
-    Stock.find().populate('product').then(data => {
-        res.status(200).json({ 'success': true, 'message': 'All stock fetched', data});
-    }).catch(err => {
-        res.status(400).json({ 'success': false, 'message': err });
-    })
+// }
 
-}
+exports.list = async (req, res) => {
+    try {
+      var orderDate = req.body.orderDate; // Retrieve the targetDate query parameter
+      let query ={};
+      if(orderDate !==undefined)
+      {
+      query = {
+        orderDate: {
+          $gte: new Date(orderDate),
+          $lt: new Date(orderDate+'T23:59:59.999Z')
+        },
+        status: { $ne: 'Completed' }
+      };
+    }
+      // Fetch all stock entries along with associated product information
+      const stockData = await Stock.find().populate('product');
+  
+      // Fetch orders for the specified date
+      try {
+        var orders = await Order.find(query)
+          .populate('products.product')
+          .populate('user')
+          .populate('orderCreatedUserId')
+          .sort({ orderDate: -1 })
+          .exec(); // Use .exec() to execute the query and return a promise
+       } catch (err) {
+        console.error('Error:', err);
+        res.status(400).json({ success: false, message: err });
+      }      
+
+      console.log("Prder",orders.length)
+      // Create a map to store total quantities for each product
+      const productTotalQuantities = new Map();
+  
+      // Loop through orders and calculate total quantities
+      for (const order of orders) {
+        for (const product of order.products) {
+          const productId = product.product._id.toString();
+          const quantity = product.quantity;
+          
+          if (productTotalQuantities.has(productId)) {
+            productTotalQuantities.set(productId, productTotalQuantities.get(productId) + quantity);
+          } else {
+            productTotalQuantities.set(productId, quantity);
+          }
+        }
+      }
+  
+      // Combine stock and total quantity data
+      const result = stockData.map(stockEntry => ({
+        id:stockEntry._id,
+        product: stockEntry.product,
+        current_quantity: stockEntry.quantity,
+        quantity_type:stockEntry.quantity_type,
+        quantity_ordered_on_date: productTotalQuantities.get(stockEntry.product._id.toString()) || 0,
+      }));
+  
+      res.status(200).json({ success: true, message: 'All stock fetched', data: result });
+    } catch (error) {
+      console.log('err', error);
+      res.status(400).json({ success: false, message: error.message });
+    }
+  };
+  
 
 exports.deleteStock = (req, res) => {
     Stock.findByIdAndRemove(req.params.id).then(data => {
@@ -19,16 +85,37 @@ exports.deleteStock = (req, res) => {
 
 }
 
-
-// Create New Stock
-exports.createStock = (req, res) => {
-    Stock.create(req.body)
+exports.updateStock = (req, res) => {
+    var quantity=req.body.newQuantity;
+    console.log("data",quantity,req.params.id)
+    Stock.findByIdAndUpdate(
+        req.params.id,
+        {quantity:quantity},
+        { new: true }
+      )
         .then((data) => {
-          res.status(200).json({ success: true, message: 'Category Created', data });
+          res.status(200).json({ success: true, message: 'Stock Updated Successfully', data });
         })
         .catch((err) => {
           res.status(400).json({ success: false, message: err });
         });
+}
+exports.createStock = async (req, res) => {
+    try {
+      // Check if a stock entry with the same product already exists
+      const existingStock = await Stock.findOne({ product: req.body.product });
+  
+      if (existingStock) {
+        return res.status(400).json({ success: false, message: 'Stock entry for this product already exists' });
+      }
+  
+      // Create the stock entry
+      const newStock = await Stock.create(req.body);
+  
+      res.status(200).json({ success: true, message: 'Stock Created', data: newStock });
+    } catch (err) {
+      res.status(400).json({ success: false, message: err });
+    }
   };
 
 exports.viewStock = (req, res) => {

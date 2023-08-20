@@ -8,6 +8,27 @@ const { bucketName, s3, getPhoto } = require('../../..');
 const { PutObjectCommand, S3, S3Client, GetObjectCommand } = require('@aws-sdk/client-s3');
 const puppeteer = require('puppeteer');
 const ejs = require('ejs');
+const Stock = require('../../../Models/stock')
+
+const updateStockQuantities = async (order) => {
+  const productsToUpdate = order.products;
+
+  for (const productData of productsToUpdate) {
+    const productId = productData.product;
+    const orderQuantity = productData.quantity;
+
+    // Find the stock entry for the product
+    const stockEntry = await Stock.findOne({ product: productId });
+
+    if (stockEntry) {
+      // Decrement the stock quantity by the order quantity
+      stockEntry.quantity -= orderQuantity;
+
+      // Save the updated stock entry
+      await stockEntry.save();
+    }
+  }
+};
 
 exports.list = (req, res) => {
   Order.find().populate({
@@ -194,36 +215,65 @@ exports.updateOrder = async (req, res) => {
 
 
 
-// Update Order Status
-exports.updateOrderStatus = (req, res) => {
+// // Update Order Status
+// exports.updateOrderStatus = (req, res) => {
+//   const newStatus = req.body.status;
+
+//   // Find the order by ID
+//   Order.findById(req.params.id)
+//     .then((order) => {
+//       if (!order) {
+//         throw new Error('Order not found');
+//       }
+//       // Calculate the remaining balance
+
+
+//       // Update the order with new status and payment information
+//       order.status = newStatus;
+//       const date = new Date();
+//       date.setHours(23);
+//       date.setMinutes(59);
+//       date.setSeconds(59);
+//       date.setMilliseconds(999);
+
+//       return order.save();
+//     })
+//     .then((data) => {
+//       res.status(200).json({ success: true, message: 'Order status updated', data });
+//     })
+//     .catch((err) => {
+//       res.status(400).json({ success: false, message: err.message });
+//     });
+// };
+
+
+exports.updateOrderStatus = async (req, res) => {
   const newStatus = req.body.status;
 
-  // Find the order by ID
-  Order.findById(req.params.id)
-    .then((order) => {
-      if (!order) {
-        throw new Error('Order not found');
-      }
-      // Calculate the remaining balance
+  try {
+    const order = await Order.findById(req.params.id);
 
+    if (!order) {
+      throw new Error('Order not found');
+    }
 
-      // Update the order with new status and payment information
-      order.status = newStatus;
-      const date = new Date();
-      date.setHours(23);
-      date.setMinutes(59);
-      date.setSeconds(59);
-      date.setMilliseconds(999);
+    // Update the order status
+    order.status = newStatus;
 
-      return order.save();
-    })
-    .then((data) => {
-      res.status(200).json({ success: true, message: 'Order status updated', data });
-    })
-    .catch((err) => {
-      res.status(400).json({ success: false, message: err.message });
-    });
+    if (newStatus === 'Completed') {
+      // Update stock quantities
+      await updateStockQuantities(order);
+    }
+
+    // Save the updated order
+    await order.save();
+
+    res.status(200).json({ success: true, message: 'Order status updated', data: order });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
 };
+
 
 exports.updatePaymentStatus = async (req, res) => {
   try {
