@@ -46,6 +46,9 @@ exports.createOrder = async (req, res) => {
         .exec()
     );
 
+    const oneDayAheadDateTimeLocal = new Date(currentDateTimeLocal.getTime() + 24 * 60 * 60 * 1000); // Add one day's worth of milliseconds
+
+
     const productsData = await Promise.all(productPromises);
 
     let totalPrice = 0;
@@ -97,7 +100,7 @@ exports.createOrder = async (req, res) => {
       totalPrice,
       user: userId,
       orderCreatedUserId:orderCreatedUserId,
-      orderDate: currentDateTimeLocal,
+      orderDate: oneDayAheadDateTimeLocal,
       previousOrderDueAmount, // Set the previousOrderDueAmount
       totalAmount, // Set the totalAmount
       duePayment: totalAmount, // Set the duePayment to the totalAmount
