@@ -14,6 +14,7 @@ const { query } = require('express');
 exports.list = async (req, res) => {
     try {
       var orderDate = req.body.orderDate; // Retrieve the targetDate query parameter
+      var categoryId = req.body.categoryId; // Retrieve the categoryId query parameter
       let query ={};
       if(orderDate !==undefined)
       {
@@ -26,8 +27,20 @@ exports.list = async (req, res) => {
       };
     }
       // Fetch all stock entries along with associated product information
-      const stockData = await Stock.find().populate('product');
-  
+      var stockData = await Stock.find()
+      .populate({
+        path: 'product',
+        populate: {
+          path: 'product_category',
+          model: 'Category', // Make sure this matches the actual model name
+        },
+      })
+      .exec();
+
+      if (categoryId) {
+        stockData = stockData.filter(stock => stock.product.product_category._id.toString() === categoryId);
+      }
+
       // Fetch orders for the specified date
       try {
         var orders = await Order.find(query)
@@ -37,7 +50,6 @@ exports.list = async (req, res) => {
           .sort({ orderDate: -1 })
           .exec(); // Use .exec() to execute the query and return a promise
        } catch (err) {
-        console.error('Error:', err);
         res.status(400).json({ success: false, message: err });
       }      
 
