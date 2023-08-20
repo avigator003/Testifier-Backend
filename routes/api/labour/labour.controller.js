@@ -26,7 +26,7 @@ exports.list = (req, res) => {
         const salaryHistory = labour.salary_history.find((history) => history.created_at === month);
 
         const attendanceDays = labour.attendance_history.filter((attendance) => {
-          return attendance.created_at.getMonth() === new Date(month).getMonth();
+          return attendance?.created_at?.getMonth() === new Date(month).getMonth();
         }).length;
 
         const salaryPerDay = labour.salary / 30;
@@ -234,9 +234,9 @@ exports.viewLabour = (req, res) => {
       const salaryHistoryByUser = {};
       labours.forEach((labour) => {
         const salaryHistory = labour.salary_history.find((history) => history.created_at === month);
-
+         
         const attendanceDays = labour.attendance_history.filter((attendance) => {
-          return attendance.created_at.getMonth() === new Date(month).getMonth();
+          return attendance?.created_at?.getMonth() === new Date(month).getMonth();
         }).length;
 
         const salaryPerDay = labour.salary / 30;
@@ -251,6 +251,8 @@ exports.viewLabour = (req, res) => {
           dueAmount,
         };
       });
+
+      console.log("d")
       res.status(200).json({ success: true, message: `Labour fetched for month: ${month}`, labour: salaryHistoryByUser[id] });
     })
     .catch((err) => {
@@ -436,7 +438,7 @@ exports.getAttendanceHistoryByDate = (req, res) => {
     .then((labours) => {
       const attendanceHistoryByUser = {};
       labours.forEach((labour) => {
-        const attendanceHistory = labour.attendance_history.find((history) => history.created_at.getTime() === new Date(date).getTime());
+        const attendanceHistory = labour.attendance_history.find((history) => history.created_at?.getTime() === new Date(date).getTime());
         attendanceHistoryByUser[labour._id] = attendanceHistory ? attendanceHistory.status : null;
       });
       res.status(200).json({ success: true, attendanceHistoryByUser });
@@ -461,7 +463,7 @@ exports.getSalaryHistoryByMonth = (req, res) => {
         const salaryHistory = labour.salary_history.find((history) => history.created_at === month);
 
         const attendanceDays = labour.attendance_history.filter((attendance) => {
-          return attendance.created_at.getMonth() === new Date(month).getMonth();
+          return attendance.created_at?.getMonth() === new Date(month).getMonth();
         }).length;
 
         const salaryPerDay = labour.salary / 30;
