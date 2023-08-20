@@ -477,6 +477,7 @@ exports.donwloadInvoice = async (req, res) => {
   var orderId = req.params.id;
   var invoiceNumber = 0;
   var routeName="";
+  var myOrder="";
   const productsList = await Order.findById(orderId)
     .populate({
       path: 'products.product',
@@ -488,6 +489,7 @@ exports.donwloadInvoice = async (req, res) => {
     .populate("user")
     .populate("orderCreatedUserId")
     .then(order => {
+       myOrder=order;
       invoiceNumber = order?.invoiceNumber;
       const userId = order.orderCreatedUserId._id;
 
@@ -510,7 +512,7 @@ exports.donwloadInvoice = async (req, res) => {
     .catch(error => {
       console.error(error);
     });
-  const currentDate = new Date();
+  const currentDate = myOrder.orderDate;
   const formattedDate = currentDate.toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' });
   const htmlFilePath = './white_invoice.html'; // Replace with the actual file path
   const htmlContent = fs.readFileSync(htmlFilePath, 'utf-8');
