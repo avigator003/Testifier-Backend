@@ -559,7 +559,7 @@ const dynamicData = {
 }
 
 async function generatePDF(htmlContent) {
-  const browser = await puppeteer.launch({ headless: "new" });
+  const browser = await puppeteer.launch({ args: ['--no-sandbox'] });
   const page = await browser.newPage();
   await page.setContent(htmlContent);
   const pdfBuffer = await page.pdf({ format: 'A4' });
