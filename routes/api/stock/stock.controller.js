@@ -53,7 +53,6 @@ exports.list = async (req, res) => {
         res.status(400).json({ success: false, message: err });
       }      
 
-      console.log("Prder",orders.length)
       // Create a map to store total quantities for each product
       const productTotalQuantities = new Map();
   
@@ -140,6 +139,38 @@ exports.updateCurrentQuantity = (req, res) => {
       res.status(400).json({ success: false, message: err });
     });
 }
+
+
+exports.completeWork = async (req, res) => {
+  const { productData } = req.body;
+
+  try {
+    // Loop through the productData array and update the stock for each product
+    for (const data of productData) {
+      const { productId, updatedQuantity } = data;
+
+      // Find the stock entry for the given productId
+      const stockEntry = await Stock.findOne({ product: productId });
+
+      if (!stockEntry) {
+        return res.status(404).json({ error: 'Stock entry not found for the given product' });
+      }
+
+      // Update the current_quantity directly with the updatedQuantity value
+      stockEntry.quantity = updatedQuantity >= 0 ? updatedQuantity : 0;
+
+      // Save the updated stock entry
+      await stockEntry.save();
+    }
+
+    // Return a success response
+    return res.status(200).json({ message: 'Work completed successfully' });
+  } catch (error) {
+    console.error('Error completing work:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
 
 
 

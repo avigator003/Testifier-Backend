@@ -69,7 +69,6 @@ exports.createOrder = async (req, res) => {
 
     const oneDayAheadDateTimeLocal = new Date(currentDateTimeLocal.getTime() + 24 * 60 * 60 * 1000); // Add one day's worth of milliseconds
 
-
     const productsData = await Promise.all(productPromises);
 
     let totalPrice = 0;
