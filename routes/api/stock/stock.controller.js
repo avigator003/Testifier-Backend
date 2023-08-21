@@ -128,6 +128,22 @@ exports.updateQuanityType = (req, res) => {
 }
 
 
+exports.updateCurrentQuantity = (req, res) => {
+  Stock.updateMany(
+    {}, // Assuming 'quantity_type' is the field name in your collection
+    { $set: { quantity: 0 } } // Replace 'newType' with the new value you want to set
+  )
+    .then((data) => {
+      res.status(200).json({ success: true, message: 'Stock Updated Successfully', data });
+    })
+    .catch((err) => {
+      res.status(400).json({ success: false, message: err });
+    });
+}
+
+
+
+
 exports.createStock = async (req, res) => {
     try {
       // Check if a stock entry with the same product already exists
