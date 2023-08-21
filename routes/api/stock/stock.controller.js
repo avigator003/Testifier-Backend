@@ -99,7 +99,6 @@ exports.deleteStock = (req, res) => {
 
 exports.updateStock = (req, res) => {
     var quantity=req.body.newQuantity;
-    console.log("data",quantity,req.params.id)
     Stock.findByIdAndUpdate(
         req.params.id,
         {quantity:quantity},
@@ -112,6 +111,23 @@ exports.updateStock = (req, res) => {
           res.status(400).json({ success: false, message: err });
         });
 }
+
+exports.updateQuanityType = (req, res) => {
+  var type = req.body.qunatityType; // Typo here, it should be 'quantityType'
+  console.log("hgey",type)
+  Stock.updateMany(
+    { quantity_type: "KG" }, // Assuming 'quantity_type' is the field name in your collection
+    { $set: { quantity_type: type } } // Replace 'newType' with the new value you want to set
+  )
+    .then((data) => {
+      res.status(200).json({ success: true, message: 'Stock Updated Successfully', data });
+    })
+    .catch((err) => {
+      res.status(400).json({ success: false, message: err });
+    });
+}
+
+
 exports.createStock = async (req, res) => {
     try {
       // Check if a stock entry with the same product already exists
