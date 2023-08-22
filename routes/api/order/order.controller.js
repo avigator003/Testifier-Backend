@@ -21,14 +21,18 @@ const updateStockQuantities = async (order) => {
     const stockEntry = await Stock.findOne({ product: productId });
 
     if (stockEntry) {
-      // Decrement the stock quantity by the order quantity
-      stockEntry.quantity -= orderQuantity;
+      // Calculate the new stock quantity
+      const updatedQuantity = stockEntry.quantity - orderQuantity;
+
+      // Set the updated quantity to 0 if it's negative, otherwise keep it as is
+      stockEntry.quantity = Math.max(updatedQuantity, 0);
 
       // Save the updated stock entry
       await stockEntry.save();
     }
   }
 };
+
 
 exports.list = (req, res) => {
   Order.find().populate({

@@ -1,5 +1,6 @@
 const Stock = require('../../../Models/stock')
 const Order = require('../../../Models/order');
+const StockEntry = require('../../../Models/stockEntry')
 const { query } = require('express');
 
 // exports.list = (req, res) => {
@@ -142,9 +143,15 @@ exports.updateCurrentQuantity = (req, res) => {
 
 
 exports.completeWork = async (req, res) => {
-  const { productData } = req.body;
-
+  const { date,productData } = req.body;
   try {
+
+    const existingEntry = await StockEntry.findOne({ date: date });
+
+    if (existingEntry) {
+      return res.status(400).json({ error: 'Work for this date is already completed' });
+    }
+
     // Loop through the productData array and update the stock for each product
     for (const data of productData) {
       const { productId, updatedQuantity } = data;
@@ -162,6 +169,7 @@ exports.completeWork = async (req, res) => {
       // Save the updated stock entry
       await stockEntry.save();
     }
+    await StockEntry.create({ date: date });
 
     // Return a success response
     return res.status(200).json({ message: 'Work completed successfully' });
@@ -170,9 +178,6 @@ exports.completeWork = async (req, res) => {
     return res.status(500).json({ error: 'Internal server error' });
   }
 };
-
-
-
 
 
 exports.createStock = async (req, res) => {
