@@ -562,7 +562,8 @@ exports.donwloadInvoice = async (req, res) => {
       console.error(error);
     });
   const currentDate = myOrder.orderDate;
-  const formattedDate = currentDate.toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' });
+  const formattedDate = currentDate.toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
+
   const htmlFilePath = './white_invoice.html'; // Replace with the actual file path
   const htmlContent = fs.readFileSync(htmlFilePath, 'utf-8');
 
