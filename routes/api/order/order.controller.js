@@ -9,7 +9,28 @@ const { PutObjectCommand, S3, S3Client, GetObjectCommand } = require('@aws-sdk/c
 const puppeteer = require('puppeteer');
 const ejs = require('ejs');
 const Stock = require('../../../Models/stock')
+
 let browser;
+
+const browserPool = [];
+
+async function getPooledBrowser() {
+  if (browserPool.length > 0) {
+    return browserPool.pop();
+  } else {
+    return await puppeteer.launch({
+      args: ['--no-sandbox'],
+      idleTimeoutMillis: 30000, // Set a timeout (e.g., 30 seconds) for inactivity
+    });;
+  }
+}
+
+async function releasePooledBrowser(browser) {
+  browserPool.push(browser);
+}
+
+
+
 const updateStockQuantities = async (order) => {
   const productsToUpdate = order.products;
 
@@ -58,7 +79,7 @@ exports.deletOrder = (req, res) => {
 
 exports.createOrder = async (req, res) => {
   try {
-    const { products,userId,orderCreatedUserId} = req.body;
+    const { products, userId, orderCreatedUserId } = req.body;
     const currentDate = new Date()
     const timeZoneOffsetMinutes = 330; // 5 hours * 60 minutes + 30 minutes
 
@@ -111,10 +132,10 @@ exports.createOrder = async (req, res) => {
         message: 'You have uncompleted orders. Please complete your previous orders before creating a new one.'
       });
     }
-    
+
 
     // Calculate the previousOrderDueAmount and totalAmount
-    const previousOrderDueAmount = previousOrders.length ? previousOrders[previousOrders.length-1].duePayment : 0;
+    const previousOrderDueAmount = previousOrders.length ? previousOrders[previousOrders.length - 1].duePayment : 0;
     const totalAmount = totalPrice + previousOrderDueAmount;
 
     // Create the new order and set its due amount to the total price plus the previous due amount (if any)
@@ -123,7 +144,7 @@ exports.createOrder = async (req, res) => {
       invoiceNumber,
       totalPrice,
       user: userId,
-      orderCreatedUserId:orderCreatedUserId,
+      orderCreatedUserId: orderCreatedUserId,
       orderDate: oneDayAheadDateTimeLocal,
       previousOrderDueAmount, // Set the previousOrderDueAmount
       totalAmount, // Set the totalAmount
@@ -142,8 +163,8 @@ exports.createOrder = async (req, res) => {
 
 exports.updateOrder = async (req, res) => {
   try {
-    const { products ,orderCreatedUserId} = req.body;
-   
+    const { products, orderCreatedUserId } = req.body;
+
     // Get the order data from the database
     const order = await Order.findById(req.params.rowId)
       .populate({
@@ -193,7 +214,7 @@ exports.updateOrder = async (req, res) => {
     let totalPrice = 0;
     for (let i = 0; i < order.products.length; i++) {
       const { product, quantity } = order.products[i];
-    
+
       const priceForUser = product.prices.find((price) => {
         return price.users.some((user) => user.toString() === orderCreatedUserId);
       });
@@ -301,7 +322,7 @@ exports.updatePaymentStatus = async (req, res) => {
     const newDueAmount = order.duePayment - payment;
     let updatedLastDueAmount = newDueAmount;
     order.paymentStatus = paymentStatus;
-    order.paidAmount = Number(order.paidAmount)+Number(payment);
+    order.paidAmount = Number(order.paidAmount) + Number(payment);
     order.duePayment = newDueAmount;
     await order.save();
 
@@ -324,8 +345,8 @@ exports.updatePaymentStatus = async (req, res) => {
       for (let i = 0; i < userOrders.length; i++) {
         const userOrder = userOrders[i];
         userOrder.paidAmount = userOrder.totalPrice;
-        userOrder.duePayment = userOrder.totalAmount-userOrder.totalPrice;
-        userOrder.paymentStatus="Paid"
+        userOrder.duePayment = userOrder.totalAmount - userOrder.totalPrice;
+        userOrder.paymentStatus = "Paid"
         await userOrder.save();
       }
     }
@@ -335,7 +356,7 @@ exports.updatePaymentStatus = async (req, res) => {
         const userOrder = userOrders[i];
         userOrder.paidAmount = 0;
         userOrder.duePayment = userOrder.totalAmount;
-        userOrder.paymentStatus="Unpaid"
+        userOrder.paymentStatus = "Unpaid"
         await userOrder.save();
       }
     }
@@ -356,7 +377,7 @@ exports.updatePaymentStatus = async (req, res) => {
 
 exports.viewOrder = (req, res) => {
   Order.findById(req.params.id)
-    .populate('user') 
+    .populate('user')
     .populate('orderCreatedUserId')
     .populate('products.product', 'product_name price') // populate the 'product' field of the 'products' array with the specified fields
     .exec()
@@ -368,7 +389,7 @@ exports.viewOrder = (req, res) => {
 }
 
 exports.viewOrderByDateOrUser = (req, res) => {
-  const { startDate, endDate, orderCreatedUserId} = req.body;
+  const { startDate, endDate, orderCreatedUserId } = req.body;
 
   const user = orderCreatedUserId;
 
@@ -406,14 +427,11 @@ exports.viewOrderByDateOrUser = (req, res) => {
 }
 
 exports.donwloadInvoice = async (req, res) => {
-  if (!browser) {
-    browser = await puppeteer.launch({ args: ['--no-sandbox'] });
-  }
-
+  browser = await getPooledBrowser();
   var orderId = req.params.id;
   var invoiceNumber = 0;
-  var routeName="";
-  var myOrder="";
+  var routeName = "";
+  var myOrder = "";
   const productsList = await Order.findById(orderId)
     .populate({
       path: 'products.product',
@@ -425,11 +443,10 @@ exports.donwloadInvoice = async (req, res) => {
     .populate("user")
     .populate("orderCreatedUserId")
     .then(order => {
-       myOrder=order;
+      myOrder = order;
       invoiceNumber = order?.invoiceNumber;
       const userId = order.orderCreatedUserId._id;
-
-      routeName=order.orderCreatedUserId.route_name;
+      routeName = order.orderCreatedUserId.route_name;
       const products = order.products.map(productObj => {
         const product = productObj.product;
         const description = product.product_name;
@@ -454,19 +471,22 @@ exports.donwloadInvoice = async (req, res) => {
   const htmlFilePath = './white_invoice.html'; // Replace with the actual file path
   const htmlContent = fs.readFileSync(htmlFilePath, 'utf-8');
 
-// Encode the HTML content to base64
+  // Encode the HTML content to base64
 
-const dynamicData = {
-  invoiceNumber: `Invoice :- ${invoiceNumber}`,
-  routeName:`Route Name :- ${routeName}`,
-  date:`Date :- ${formattedDate}`,
-  products:JSON.stringify(productsList)
-  // Add more dynamic data here
-};
+  const dynamicData = {
+    invoiceNumber: `Invoice :- ${invoiceNumber}`,
+    routeName: `Route Name :- ${routeName}`,
+    date: `Date :- ${formattedDate}`,
+    products: JSON.stringify(productsList)
+    // Add more dynamic data here
+  };
 
   // Render the EJS template with dynamic data
+  console.log("Rnedring")
   const renderedHtml = ejs.render(htmlContent, dynamicData);
   const pdfBuffer = await generatePDF(renderedHtml);
+
+  console.log("PDF GENRATED")
   var orderPdfName = `order-${orderId}.pdf`
 
 
@@ -478,26 +498,26 @@ const dynamicData = {
     ContentType: 'application/pdf',
   };
   try {
-    const command=new PutObjectCommand(uploadParams)
+    const command = new PutObjectCommand(uploadParams)
     const response = await s3.send(command);
   } catch (error) {
     console.error('Error uploading PDF:', error);
   }
-     const filePath=await getPhoto(orderPdfName);
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="${filePath}"`);
-    res.status(200);
-    res.send(pdfBuffer);
+  const filePath = await getPhoto(orderPdfName);
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', `attachment; filename="${filePath}"`);
+  res.status(200);
+  res.send(pdfBuffer);
 
-    
-    const getObjectParams = {
-      Bucket: bucketName,
-      Key: orderPdfName,
-    };
 
-    const getCommand = new GetObjectCommand(getObjectParams);
-    const response = await s3.send(getCommand);
-    // response.Body.pipe(res);
+  const getObjectParams = {
+    Bucket: bucketName,
+    Key: orderPdfName,
+  };
+
+  const getCommand = new GetObjectCommand(getObjectParams);
+  const response = await s3.send(getCommand);
+  // response.Body.pipe(res);
 }
 
 
@@ -513,10 +533,8 @@ async function generatePDF(htmlContent) {
     throw error; // Rethrow the error to be caught by the caller
   } finally {
     if (browser) {
-      await browser.close(); // Close the browser instance even in case of an error
+      await releasePooledBrowser(browser);
     }
   }
 }
-
-
 
