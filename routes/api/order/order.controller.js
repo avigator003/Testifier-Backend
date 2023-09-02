@@ -9,7 +9,7 @@ const { PutObjectCommand, S3, S3Client, GetObjectCommand } = require('@aws-sdk/c
 const puppeteer = require('puppeteer');
 const ejs = require('ejs');
 const Stock = require('../../../Models/stock')
-
+let browser;
 const updateStockQuantities = async (order) => {
   const productsToUpdate = order.products;
 
@@ -406,6 +406,10 @@ exports.viewOrderByDateOrUser = (req, res) => {
 }
 
 exports.donwloadInvoice = async (req, res) => {
+  if (!browser) {
+    browser = await puppeteer.launch({ args: ['--no-sandbox'] });
+  }
+
   var orderId = req.params.id;
   var invoiceNumber = 0;
   var routeName="";
@@ -499,10 +503,7 @@ const dynamicData = {
 
 
 async function generatePDF(htmlContent) {
-  let browser = null; // Declare the browser variable outside the try-catch block
-
   try {
-    browser = await puppeteer.launch({ args: ['--no-sandbox'] });
     const page = await browser.newPage();
     await page.setContent(htmlContent);
     const pdfBuffer = await page.pdf({ format: 'A4' });
