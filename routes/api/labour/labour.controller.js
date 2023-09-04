@@ -7,14 +7,15 @@ const upload = multer({ storage: storage })
 
 
 exports.list = (req, res) => {
-  const { month } = req.body;
+  const { month ,status} = req.body;
   const query = {};
 
-  if (month) {
-    query['salary_history.created_at'] = month;
+
+  if (status) {
+    query.status = status; // Add this condition to filter by status
   }
 
-  Labour.find()
+  Labour.find(query)
     .then((labours) => {
       const salaryHistoryByUser = {};
       // Iterate over the labours and calculate the payable amount and due payment for the month
@@ -36,13 +37,26 @@ exports.list = (req, res) => {
         const advancePayment = salaryHistory ? salaryHistory.advance_payment : 0;
         const dueAmount = advancePayment - totalPayableAmount;
 
+        if(salaryHistory.status =="Paid")
+        {
+          salaryHistoryByUser[labour._id] = {
+            ...labour._doc,
+            advancePayment:0,
+            payableAmount: 0,
+            dueAmount:0,
+            paymentStatus:salaryHistory.status
+          };
+        }
+        else{
+        
         salaryHistoryByUser[labour._id] = {
           ...labour._doc,
           advancePayment,
           payableAmount: totalPayableAmount,
           dueAmount,
-          paymentStatus:salaryHistory?.status
+          paymentStatus:salaryHistory.status
         };
+      }
       });
  
 
@@ -139,7 +153,7 @@ exports.createLabour = (req, res) => {
 
 // Update labour
 exports.updateLabour = (req, res) => {
-
+console.log("ipdaptutnmg")
   upload.fields([
     { name: 'labour_profile', maxCount: 1 },
     { name: 'adhar_front', maxCount: 1 },
@@ -153,7 +167,7 @@ exports.updateLabour = (req, res) => {
 
 
     // Check if a new user_profile file was uploaded
-    if (req.files['labour_profile']) {
+    if (req?.files['labour_profile']) {
       await Labour.findById(req.params.id).then(data => {
         deletePhoto(data.labour_photo_name);
       });
@@ -591,6 +605,28 @@ exports.getSalaryHistoryByMonth = (req, res) => {
       console.log("err", err);
       res.status(400).json({ success: false, message: err.message });
     });
+};
+
+exports.updateLabourStatus = async (req, res) => {
+  try {
+    const { status, id } = req.body;
+    console.log("heye",status,id)
+
+    // Update the status for the specific labor using their id
+    const updatedLabour = await Labour.findByIdAndUpdate(
+      id,
+      { $set: { status: status } },
+      { new: true } // This option returns the updated document
+    );
+
+    if (!updatedLabour) {
+      return res.status(404).json({ message: 'Labor not found' });
+    }
+
+    return res.status(200).json({ message: 'Labor Status Updated', updatedLabour });
+  } catch (error) {
+    return res.status(500).json({ message: 'Internal server error', error });
+  }
 };
 
 
