@@ -10,5 +10,6 @@ router.post('/view/:id', controller.viewLabour)
 router.get('/view/:mobileNumber', controller.viewLabourByMobileNumber)
 router.post('/attendance/update', controller.updateAttendanceHistory)
 router.get('/attendance/list/:date', controller.getAttendanceHistoryByDate)
+router.get('/reset', controller.reset)
 router.get('/salary/list/:month', controller.getSalaryHistoryByMonth)
 module.exports = router

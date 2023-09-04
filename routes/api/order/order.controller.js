@@ -37,18 +37,10 @@ const updateStockQuantities = async (order) => {
   for (const productData of productsToUpdate) {
     const productId = productData.product;
     const orderQuantity = productData.quantity;
-
-    // Find the stock entry for the product
     const stockEntry = await Stock.findOne({ product: productId });
-
     if (stockEntry) {
-      // Calculate the new stock quantity
       const updatedQuantity = stockEntry.quantity - orderQuantity;
-
-      // Set the updated quantity to 0 if it's negative, otherwise keep it as is
       stockEntry.quantity = Math.max(updatedQuantity, 0);
-
-      // Save the updated stock entry
       await stockEntry.save();
     }
   }

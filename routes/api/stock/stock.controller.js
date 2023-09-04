@@ -77,7 +77,7 @@ exports.list = async (req, res) => {
         product: stockEntry.product,
         current_quantity: stockEntry.quantity,
         quantity_type:stockEntry.quantity_type,
-        quantity_ordered_on_date: productTotalQuantities.get(stockEntry.product._id.toString()) || 0,
+        quantity_ordered_on_date: productTotalQuantities.get(stockEntry.product?._id.toString()) || 0,
       }));
   
       res.status(200).json({ success: true, message: 'All stock fetched', data: result });
