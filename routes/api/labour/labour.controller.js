@@ -10,10 +10,12 @@ exports.list = (req, res) => {
   const { month ,status} = req.body;
   const query = {};
 
-
+  
   if (status) {
     query.status = status; // Add this condition to filter by status
   }
+
+
 
   Labour.find(query)
     .then((labours) => {
@@ -153,7 +155,6 @@ exports.createLabour = (req, res) => {
 
 // Update labour
 exports.updateLabour = (req, res) => {
-console.log("ipdaptutnmg")
   upload.fields([
     { name: 'labour_profile', maxCount: 1 },
     { name: 'adhar_front', maxCount: 1 },
@@ -292,7 +293,14 @@ exports.viewLabourByMobileNumber = (req, res) => {
 
   exports.updateSalaryHistory = (req, res) => {
     const { month, salaryStatus } = req.body;
-  
+
+    const currentMonth = new Date().toISOString().slice(0, 7);
+    if (month > currentMonth) {
+      return res.status(400).json({
+        success: false,
+        message: "Future payments are not allowed.",
+      });
+    }
     // Find all labours to get their attendance history
     Labour.find()
       .then((labours) => {
@@ -301,7 +309,7 @@ exports.viewLabourByMobileNumber = (req, res) => {
           return Labour.findOne(
             { _id: labour._id, "salary_history.created_at": month },
             { "salary_history.$": 1 }
-          ).lean();
+          ).lean();``
         });
   
         // Resolve all the promises to get the attendance history for all users
@@ -448,7 +456,17 @@ exports.viewLabourByMobileNumber = (req, res) => {
 exports.updateAttendanceHistory = async (req, res) => {
   const { date, attendanceStatus } = req.body;
   const dateObj = new Date(date);
+  const currentDate=new Date();
 
+  const dateObjDateOnly = new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate());
+  const currentDateDateOnly = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate());
+  
+if (dateObjDateOnly > currentDateDateOnly) {
+    return res.status(400).json({
+      success: false,
+      message: "Future date attendance is not allowed.",
+    });
+  }
   try {
     // Find all labours to get their attendance history
     const labours = await Labour.find();
@@ -570,6 +588,7 @@ exports.getAttendanceHistoryByDate = (req, res) => {
 
 exports.getSalaryHistoryByMonth = (req, res) => {
   const { month } = req.params;
+
   Labour.find({})
     .populate({
       path: 'salary_history',
@@ -592,6 +611,7 @@ exports.getSalaryHistoryByMonth = (req, res) => {
 
         salaryHistoryByUser[labour._id] = {
           ...labour._doc,
+          salary_history:salaryHistory,
           advancePayment,
           payableAmount,
           dueAmount,
@@ -610,7 +630,6 @@ exports.getSalaryHistoryByMonth = (req, res) => {
 exports.updateLabourStatus = async (req, res) => {
   try {
     const { status, id } = req.body;
-    console.log("heye",status,id)
 
     // Update the status for the specific labor using their id
     const updatedLabour = await Labour.findByIdAndUpdate(
