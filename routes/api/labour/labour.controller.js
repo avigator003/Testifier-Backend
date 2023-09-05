@@ -37,7 +37,7 @@ exports.list = (req, res) => {
         const advancePayment = salaryHistory ? salaryHistory.advance_payment : 0;
         const dueAmount = advancePayment - totalPayableAmount;
 
-        if(salaryHistory.status =="Paid")
+        if(salaryHistory?.status =="Paid")
         {
           salaryHistoryByUser[labour._id] = {
             ...labour._doc,
@@ -54,7 +54,7 @@ exports.list = (req, res) => {
           advancePayment,
           payableAmount: totalPayableAmount,
           dueAmount,
-          paymentStatus:salaryHistory.status
+          paymentStatus:salaryHistory?.status
         };
       }
       });
