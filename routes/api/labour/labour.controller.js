@@ -10,12 +10,12 @@ exports.list = (req, res) => {
   const { month ,status} = req.body;
   const query = {};
 
-  
   if (status) {
     query.status = status; // Add this condition to filter by status
   }
-
-
+  else{
+    query.status="Active"
+  }
 
   Labour.find(query)
     .then((labours) => {
@@ -566,7 +566,7 @@ function getDaysInMonth(year, month) {
 exports.getAttendanceHistoryByDate = (req, res) => {
   const { date } = req.params;
 
-  Labour.find({})
+  Labour.find()
     .populate({
       path: 'attendance_history',
       match: { created_at: new Date(date) },
