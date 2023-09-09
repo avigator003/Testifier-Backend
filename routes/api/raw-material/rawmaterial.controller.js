@@ -148,7 +148,6 @@ exports.createRawMaterialCategory = (req, res) => {
   .catch((err) => {
     res.status(400).json({ success: false, message: err });
   });
-
 }
 
 exports.deleteRawMaterialCategory = (req, res) => {
@@ -157,6 +156,23 @@ exports.deleteRawMaterialCategory = (req, res) => {
   }).catch(err => {
     res.status(400).json({ 'success': false, 'message': err });
   })
+}
+
+
+exports.updateRawMaterialCategory = (req, res) => {
+  const {name} =req.body
+
+  RawMaterialCategory.findByIdAndUpdate(
+    req.params.id,
+    {name:name},
+    { new: true }
+  )
+    .then((data) => {
+      res.status(200).json({ success: true, message: 'Category Updated', data });
+    })
+    .catch((err) => {
+      res.status(400).json({ success: false, message: err });
+    });
 }
 
 exports.getRawMaterialCategories = (req, res) => {
