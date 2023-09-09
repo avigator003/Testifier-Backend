@@ -4,17 +4,15 @@ const multer = require('multer');
 const storage = multer.memoryStorage()
 const upload = multer({ storage: storage })
 
-
-
 exports.list = (req, res) => {
-  const { month ,status} = req.body;
+  const { month, status } = req.body;
   const query = {};
 
   if (status) {
     query.status = status; // Add this condition to filter by status
   }
-  else{
-    query.status="Active"
+  else {
+    query.status = "Active"
   }
 
   Labour.find(query)
@@ -22,9 +20,10 @@ exports.list = (req, res) => {
       const salaryHistoryByUser = {};
       // Iterate over the labours and calculate the payable amount and due payment for the month
       labours.forEach((labour) => {
-          const salaryHistory = labour.salary_history.find((history) =>{ 
-          return history.created_at === month});
-       
+        const salaryHistory = labour.salary_history.find((history) => {
+          return history.created_at === month
+        });
+
         // Filter the attendance history entries for the specified month
         const attendanceHistoryForMonth = labour.attendance_history.filter((attendance) => {
           const monthNumber = new Date(attendance.created_at).getMonth() + 1;
@@ -36,31 +35,34 @@ exports.list = (req, res) => {
           return total + (attendance.payableAmount || 0);
         }, 0);
 
-        const advancePayment = salaryHistory ? salaryHistory.advance_payment : 0;
-        const dueAmount = advancePayment - totalPayableAmount;
+        let totalAdvancePayment = 0;
+        if (salaryHistory && Array.isArray(salaryHistory.advance_payment)) {
+          totalAdvancePayment = salaryHistory.advance_payment.reduce((total, advance) => {
+            return total + advance.amount;
+          }, 0);
+        }
+        const dueAmount = totalAdvancePayment - totalPayableAmount;
 
-        if(salaryHistory?.status =="Paid")
-        {
+        if (salaryHistory?.status == "Paid") {
           salaryHistoryByUser[labour._id] = {
             ...labour._doc,
-            advancePayment:0,
+            advancePayment: 0,
             payableAmount: 0,
-            dueAmount:0,
-            paymentStatus:salaryHistory.status
+            dueAmount: 0,
+            paymentStatus: salaryHistory.status
           };
         }
-        else{
-        
-        salaryHistoryByUser[labour._id] = {
-          ...labour._doc,
-          advancePayment,
-          payableAmount: totalPayableAmount,
-          dueAmount,
-          paymentStatus:salaryHistory?.status
-        };
-      }
+        else {
+          salaryHistoryByUser[labour._id] = {
+            ...labour._doc,
+            advancePayment:totalAdvancePayment,
+            payableAmount: totalPayableAmount,
+            dueAmount,
+            paymentStatus: salaryHistory?.status
+          };
+        }
       });
- 
+
 
       res.status(200).json({ success: true, message: `Labour fetched for month: ${month}`, data: Object.values(salaryHistoryByUser) });
     })
@@ -291,89 +293,104 @@ exports.viewLabourByMobileNumber = (req, res) => {
 }
 
 
-  exports.updateSalaryHistory = (req, res) => {
-    const { month, salaryStatus } = req.body;
+exports.updateSalaryHistory = (req, res) => {
+  const { month, salaryStatus } = req.body;
 
-    const currentMonth = new Date().toISOString().slice(0, 7);
-    if (month > currentMonth) {
-      return res.status(400).json({
-        success: false,
-        message: "Future payments are not allowed.",
+  const currentMonth = new Date().toISOString().slice(0, 7);
+  if (month > currentMonth) {
+    return res.status(400).json({
+      success: false,
+      message: "Future payments are not allowed.",
+    });
+  }
+  // Find all labours to get their attendance history
+  Labour.find()
+    .then((labours) => {
+      // Find the attendance history for the given date for each user
+      const salaryHistoryPromises = labours.map((labour) => {
+        return Labour.findOne(
+          { _id: labour._id, "salary_history.created_at": month },
+          { "salary_history.$": 1 }
+        ).lean(); ``
       });
-    }
-    // Find all labours to get their attendance history
-    Labour.find()
-      .then((labours) => {
-        // Find the attendance history for the given date for each user
-        const salaryHistoryPromises = labours.map((labour) => {
-          return Labour.findOne(
-            { _id: labour._id, "salary_history.created_at": month },
-            { "salary_history.$": 1 }
-          ).lean();``
-        });
-  
-        // Resolve all the promises to get the attendance history for all users
-        Promise.all(salaryHistoryPromises)
-          .then((salaryHistory) => {
-            // Create an object to hold the attendance history for each user
-            const salaryHistoryByUser = {};
-            salaryHistory.forEach((history) => {
-              if (history) {
-                // If attendance history for the date is found, update it
-                salaryHistoryByUser[history._id] = history.salary_history[0]._id;
+
+      // Resolve all the promises to get the attendance history for all users
+      Promise.all(salaryHistoryPromises)
+        .then((salaryHistory) => {
+          // Create an object to hold the attendance history for each user
+          const salaryHistoryByUser = {};
+          salaryHistory.forEach((history) => {
+            if (history) {
+              // If attendance history for the date is found, update it
+              salaryHistoryByUser[history._id] = history.salary_history[0]._id;
+            } else {
+              // If attendance history for the date is not found, insert a new entry
+              salaryHistoryByUser[history?._id] = null;
+            }
+          });
+
+          // Iterate over the attendanceStatus array and update each user's attendance history
+          Promise.all(
+            Object.entries(salaryStatus).map(([userId, status]) => {
+              var userId;
+              var salaryStatusValue;
+              var advancePaymentData = []
+              if (status[0].status !== "Advance Payment") {
+                userId = status[0].id;
+                salaryStatusValue = status[0].status;
+              }
+              else {
+                userId = status[0].id;
+                salaryStatusValue = status[0].status;
+                status.map((data) => {
+                  advancePaymentData.push({ amount: data?.payment, date: data?.date })
+                })
+              }
+
+
+              if (salaryHistoryByUser[userId]) {
+                return Labour.findOneAndUpdate(
+                  { _id: userId, "salary_history._id": salaryHistoryByUser[userId] },
+                  {
+                    $set: {
+                      "salary_history.$": { created_at: month, status: salaryStatusValue, advance_payment: advancePaymentData },
+                    },
+                  },
+                  { new: true }
+                ).exec();
               } else {
                 // If attendance history for the date is not found, insert a new entry
-                salaryHistoryByUser[history?._id] = null;
+                return Labour.findOneAndUpdate(
+                  { _id: userId },
+                  { $push: { salary_history: [{ created_at: month, status: salaryStatusValue, advance_payment: advancePaymentData }] } },
+                  { new: true }
+                ).exec();
               }
-            });
-  
-            // Iterate over the attendanceStatus array and update each user's attendance history
-            Promise.all(
-              salaryStatus.map((status) => {
-                const userId = status.id;
-                const salaryStatusValue = status.status;
-                const salaryAdvancePayment = status.payment;
-  
-                if (salaryHistoryByUser[userId]) {
-                  // If attendance history for the date is found, update it
-                  return Labour.findOneAndUpdate(
-                    { _id: userId, "salary_history._id": salaryHistoryByUser[userId] },
-                    { $set: { "salary_history.$.status": salaryStatusValue, "salary_history.$.advance_payment": salaryAdvancePayment } },
-                    { new: true }
-                  ).exec();
-                } else {
-                  // If attendance history for the date is not found, insert a new entry
-                  return Labour.findOneAndUpdate(
-                    { _id: userId },
-                    { $push: { salary_history: { created_at: month, status: salaryStatusValue, advance_payment: salaryAdvancePayment } } },
-                    { new: true }
-                  ).exec();
-                }
-              })
-            )
-              .then((updatedLabours) => {
-                res.status(200).json({
-                  success: true,
-                  message: "Salary history updated for all users",
-                  updatedLabours,
-                });
-              })
-              .catch((err) => {
-                console.log("err", err);
-                res.status(400).json({ success: false, message: err.message });
+            })
+          )
+            .then((updatedLabours) => {
+              res.status(200).json({
+                success: true,
+                message: "Salary history updated for all users",
+                updatedLabours,
               });
-          })
-          .catch((err) => {
-            console.log("err", err);
-            res.status(400).json({ success: false, message: err.message });
-          });
-      })
-      .catch((err) => {
-        console.log("err", err);
-        res.status(400).json({ success: false, message: err.message });
-      });
-  };
-  
+            })
+            .catch((err) => {
+              console.log("err", err);
+              res.status(400).json({ success: false, message: err.message });
+            });
+        })
+        .catch((err) => {
+          console.log("err", err);
+          res.status(400).json({ success: false, message: err.message });
+        });
+    })
+    .catch((err) => {
+      console.log("err", err);
+      res.status(400).json({ success: false, message: err.message });
+    });
+};
+
 
 
 
@@ -456,12 +473,12 @@ exports.viewLabourByMobileNumber = (req, res) => {
 exports.updateAttendanceHistory = async (req, res) => {
   const { date, attendanceStatus } = req.body;
   const dateObj = new Date(date);
-  const currentDate=new Date();
+  const currentDate = new Date();
 
   const dateObjDateOnly = new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate());
   const currentDateDateOnly = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate());
-  
-if (dateObjDateOnly > currentDateDateOnly) {
+
+  if (dateObjDateOnly > currentDateDateOnly) {
     return res.status(400).json({
       success: false,
       message: "Future date attendance is not allowed.",
@@ -611,7 +628,7 @@ exports.getSalaryHistoryByMonth = (req, res) => {
 
         salaryHistoryByUser[labour._id] = {
           ...labour._doc,
-          salary_history:salaryHistory,
+          salary_history: salaryHistory,
           advancePayment,
           payableAmount,
           dueAmount,
@@ -649,7 +666,7 @@ exports.updateLabourStatus = async (req, res) => {
 };
 
 
-exports.reset = async(req, res) => {
+exports.reset = async (req, res) => {
   try {
     // Update all Labour documents
     const updatedLabours = await Labour.updateMany(

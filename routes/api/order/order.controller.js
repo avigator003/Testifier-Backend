@@ -474,7 +474,6 @@ exports.donwloadInvoice = async (req, res) => {
   };
 
   // Render the EJS template with dynamic data
-  console.log("Rnedring")
   const renderedHtml = ejs.render(htmlContent, dynamicData);
   const pdfBuffer = await generatePDF(renderedHtml);
 

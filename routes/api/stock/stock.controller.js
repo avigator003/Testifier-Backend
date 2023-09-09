@@ -39,7 +39,7 @@ exports.list = async (req, res) => {
       .exec();
 
       if (categoryId) {
-        stockData = stockData.filter(stock => stock.product.product_category._id.toString() === categoryId);
+        stockData = stockData.filter(stock => stock.product?.product_category._id.toString() === categoryId);
       }
 
       // Fetch orders for the specified date
