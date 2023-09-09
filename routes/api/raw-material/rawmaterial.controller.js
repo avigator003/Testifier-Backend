@@ -1,4 +1,5 @@
 const RawMaterial = require('../../../Models/rawmaterial')
+const RawMaterialCategory = require('../../../Models/rawmaterilacategory')
 const { putPhoto, getPhoto, deletePhoto } = require('../../..');
 const multer = require('multer');
 
@@ -40,7 +41,10 @@ exports.createRawMaterial = (req, res) => {
       rawMaterialData.raw_material_photo_name = fileName
     }
 
-    RawMaterial.create({ ...rawMaterialData })
+
+    const categoryIds = rawMaterialData.category.split(",").map((id) => id.trim());
+    delete rawMaterialData.category;
+    RawMaterial.create({ ...rawMaterialData,category:categoryIds })
       .then((data) => {
         res.status(200).json({ success: true, message: 'Raw Material Created', data });
       })
@@ -72,12 +76,14 @@ exports.updateRawMaterial = (req, res) => {
       const url = await getPhoto(fileName);
       rawMaterialData.raw_material_photo = url;
       rawMaterialData.raw_material_photo_name = fileName
-    
     }
 
+    const categoryIds = rawMaterialData.category.split(",").map((id) => id.trim());
+    delete rawMaterialData.category;
+   
     RawMaterial.findByIdAndUpdate(
       req.params.id,
-      rawMaterialData,
+      {...rawMaterialData,category:categoryIds},
       { new: true }
     )
       .then((data) => {
@@ -90,7 +96,7 @@ exports.updateRawMaterial = (req, res) => {
 };
 
 exports.viewRawMaterial = (req, res) => {
-  RawMaterial.findById(req.params.id).then(data => {
+  RawMaterial.findById(req.params.id).populate('category').exec().then(data => {
     res.status(200).json({ 'success': true, 'message': 'Raw Material fetched', 'rawmaterial': data });
   }).catch(err => {
     res.status(400).json({ 'success': false, 'message': err });
@@ -129,6 +135,33 @@ exports.buyRawMaterial = (req, res) => {
     });
 };
 
+exports.createRawMaterialCategory = (req, res) => {
+  const {categoryName} = req.body
+  RawMaterialCategory.create({ name:categoryName })
+  .then((data) => {
+    res.status(200).json({ success: true, message: 'Raw Material Category Created', data });
+  })
+  .catch((err) => {
+    res.status(400).json({ success: false, message: err });
+  });
+
+}
+
+exports.deleteRawMaterialCategory = (req, res) => {
+  RawMaterialCategory.findByIdAndRemove(req.params.id).then(data => {
+    res.status(200).json({ 'success': true, 'message': 'raw material category removed' });
+  }).catch(err => {
+    res.status(400).json({ 'success': false, 'message': err });
+  })
+}
+
+exports.getRawMaterialCategories = (req, res) => {
+  RawMaterialCategory.find().then(data => {
+    res.status(200).json({ 'success': true, 'message': 'All raw material categories fetched', data });
+  }).catch(err => {
+    res.status(400).json({ 'success': false, 'message': err });
+  })
+}
 
 exports.useRawMaterial = (req, res) => {
   const { quantity } = req.body;

@@ -9,5 +9,8 @@ router.get('/view/:id', controller.viewRawMaterial)
 router.get('/view-history/:id', controller.viewRawMaterialHistory)
 router.post('/buy/:id', controller.buyRawMaterial)
 router.post('/use/:id', controller.useRawMaterial)
+router.post('/create/category', controller.createRawMaterialCategory)
+router.post('/delete/category/:id', controller.deleteRawMaterialCategory)
+router.post('/get/category', controller.getRawMaterialCategories)
 
 module.exports = router

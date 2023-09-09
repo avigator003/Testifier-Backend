@@ -5,9 +5,6 @@ const schemaOptions = {
     timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' },
   };
 
-const RawMaterialCategory = new Schema({
-     name:String
-},schemaOptions)
 
 const RawMaterial = new Schema({
     raw_material_name:String,
@@ -21,7 +18,8 @@ const RawMaterial = new Schema({
 },schemaOptions)
 
 module.exports = mongoose.model('RawMaterial', RawMaterial)
-module.exports = mongoose.model('RawMaterialCategory', RawMaterialCategory)
+
+
 
 
 
