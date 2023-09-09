@@ -2,6 +2,7 @@ const RawMaterial = require('../../../Models/rawmaterial')
 const RawMaterialCategory = require('../../../Models/rawmaterilacategory')
 const { putPhoto, getPhoto, deletePhoto } = require('../../..');
 const multer = require('multer');
+const { raw } = require('express');
 
 // Set up multer storage engine
 const storage = multer.memoryStorage()
@@ -77,10 +78,13 @@ exports.updateRawMaterial = (req, res) => {
       rawMaterialData.raw_material_photo = url;
       rawMaterialData.raw_material_photo_name = fileName
     }
+   
 
     const categoryIds = rawMaterialData.category.split(",").map((id) => id.trim());
+    
+
     delete rawMaterialData.category;
-   
+    delete rawMaterialData.history
     RawMaterial.findByIdAndUpdate(
       req.params.id,
       {...rawMaterialData,category:categoryIds},
