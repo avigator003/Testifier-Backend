@@ -12,6 +12,7 @@ const RawMaterial = new Schema({
     raw_material_photo:String,
     category:[{ type: Schema.Types.ObjectId, ref: 'RawMaterialCategory' }],
     raw_material_photo_name:String,
+    raw_material_min_quantity:Number,
     quantity_type:String,
     total_quantity:{type: Number , default :0 },
     history:[{ history_type: String, quantity:Number,created_at: { type: Date, default: Date.now } }],
