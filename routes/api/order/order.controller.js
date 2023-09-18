@@ -19,8 +19,10 @@ async function getPooledBrowser() {
     return browserPool.pop();
   } else {
     return await puppeteer.launch({
+      args: ['--no-sandbox'],
+      idleTimeoutMillis: 30000, // Set a timeout (e.g., 30 seconds) for inactivity
       executablePath: '/usr/bin/chromium-browser'
-    })
+    });;
   }
 }
 
