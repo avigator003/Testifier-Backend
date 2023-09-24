@@ -168,7 +168,6 @@ exports.updateLabour = (req, res) => {
 
     const labourData = { ...req.body };
 
-
     // Check if a new user_profile file was uploaded
     if (req?.files['labour_profile']) {
       await Labour.findById(req.params.id).then(data => {
@@ -219,16 +218,17 @@ exports.updateLabour = (req, res) => {
       if (labour && labour._id.toString() !== req.params.id) {
         return res.status(200).json({ success: false, message: `Mobile number already registered with ${labour?.user_name}` });
       }
-
+      const { salary_history, attendance_history, ...updateData } = labourData;
       Labour.findByIdAndUpdate(
         req.params.id,
-        labourData,
+        updateData,
         { new: true }
       )
         .then((data) => {
-          res.status(200).json({ success: true, message: 'Labout Updated Successfully', data });
+          res.status(200).json({ success: true, message: 'Labour Updated Successfully', data });
         })
         .catch((err) => {
+          console.log("Error:", err);
           res.status(400).json({ success: false, message: err });
         });
     });
