@@ -50,8 +50,6 @@ exports.createRawMaterial = (req, res) => {
         res.status(200).json({ success: true, message: 'Raw Material Created', data });
       })
       .catch((err) => {
-        console.log("akshat", err)
-
         res.status(400).json({ success: false, message: err });
       });
   });

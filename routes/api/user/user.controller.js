@@ -356,7 +356,10 @@ exports.loginByMobileNumberAndPassword = (req, res) => {
   const mobileNumber = req.body.mobileNumber;
   const password = req.body.password;
 
+  console.log("nekjfjew",req.body)
+
   User.find({ mobile_number: mobileNumber, password: password }).then(data => {
+    console.log("data",data)
     if (data.length > 0) {
       res.status(200).json({ 'success': true, 'message': 'user fetched', 'data': data });
     } else {
