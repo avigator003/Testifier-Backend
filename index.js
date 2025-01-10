@@ -99,7 +99,7 @@ app.set('jwt-secret', config.secret)
 
 // index page, just for testing
 app.get('/', (req, res) => {
-    res.send('Hello JWT 1')
+    res.send('Hello JWT 4')
 })
 
 // configure api router

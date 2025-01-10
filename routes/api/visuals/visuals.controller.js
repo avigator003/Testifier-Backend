@@ -32,11 +32,11 @@ exports.graphsDay = async (req, res )=> {
               $lt: endOfMonth // Less than the start of the next month
             }
           });
-         console.log('startOfMonth',entries);
+        //  console.log('startOfMonth',entries);
           const dailySums = {};
           entries.forEach(entry => {
             const day = entry.created_at.getDate(); // Get the day of the month (1-31)
-            const value = entry.totalAmount; // Get the value of the field (e.g., `amount`)
+            const value = entry.totalPrice; // Get the value of the field (e.g., `amount`)
       
             // If the day doesn't exist in the object, initialize it to 0
             if (!dailySums[day]) {
@@ -93,7 +93,7 @@ exports.graphsMonth = async (req, res) => {
       // Iterate over the entries and sum by month
       entries.forEach(entry => {
         const month = entry.created_at.getMonth() + 1; // Get the month (1-based: 1 = January, 12 = December)
-        const value = entry.totalAmount; // Get the value of the field (e.g., `totalAmount`)
+        const value = entry.totalPrice; // Get the value of the field (e.g., `totalAmount`)
   
         // Add the current entry's value to the corresponding month's sum
         monthlySums[month] += value;
@@ -133,7 +133,7 @@ exports.graphsYear = async (req, res)=> {
           // Calculate the sum for the current year
           let yearlySum = 0;
           entries.forEach(entry => {
-            yearlySum += entry.totalAmount; // Sum up the totalAmount for the year
+            yearlySum += entry.totalPrice; // Sum up the totalAmount for the year
           });
     
           // Store the yearly sum in the object

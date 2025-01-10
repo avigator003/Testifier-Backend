@@ -118,6 +118,10 @@ exports.createOrder = async (req, res) => {
 
     // Find all unpaid orders for the user and calculate the total due amount
     const previousOrders = await Order.find({ orderCreatedUserId: orderCreatedUserId }).sort('-createdAt');
+
+
+
+
     const uncompletedOrders = previousOrders.filter(order => order.status !== 'Completed');
     if (uncompletedOrders.length > 0) {
       return res.status(200).json({
@@ -127,10 +131,20 @@ exports.createOrder = async (req, res) => {
     }
 
 
+
+
+
+
+    const yersterDayOrder = await Order.find({
+      orderCreatedUserId: orderCreatedUserId,
+    })
+      .sort({ orderDate: -1 }) // Sort by orderDate in descending order
+      .populate('user', 'user_name'); // Populate user and include only user_name field
+    
+
     // Calculate the previousOrderDueAmount and totalAmount
     const previousOrderDueAmount = previousOrders.length ? previousOrders[previousOrders.length - 1].duePayment : 0;
-    const totalAmount = totalPrice + previousOrderDueAmount;
-
+    
     // Create the new order and set its due amount to the total price plus the previous due amount (if any)
     const order = new Order({
       products: orderProducts,
@@ -139,9 +153,9 @@ exports.createOrder = async (req, res) => {
       user: userId,
       orderCreatedUserId: orderCreatedUserId,
       orderDate: oneDayAheadDateTimeLocal,
-      previousOrderDueAmount, // Set the previousOrderDueAmount
-      totalAmount, // Set the totalAmount
-      duePayment: totalAmount, // Set the duePayment to the totalAmount
+      previousOrderDueAmount:yersterDayOrder[0].duePayment, // Set the previousOrderDueAmount
+      totalAmount: yersterDayOrder[0].duePayment + totalPrice, // Set the totalAmount
+      duePayment: yersterDayOrder[0].duePayment + totalPrice , // Set the duePayment to the totalAmount
     });
 
     await order.save();
